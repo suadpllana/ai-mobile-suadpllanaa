@@ -10,12 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { supabase } from '../../supabase';
+import { supabase } from '../supabase';
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,11 +33,58 @@ export default function AuthScreen() {
     return re.test(String(value).toLowerCase());
   };
 
+  const createDefaultCategories = async (userId: string) => {
+    const defaultCategories = [
+      'Fiction',
+      'Non-Fiction',
+      'Mystery',
+      'Science Fiction',
+      'Fantasy',
+      'Romance',
+      'Biography',
+      'History',
+      'Science',
+      'Technology',
+      'Business',
+      'Self-Help',
+      'Poetry',
+      'Drama',
+      'Comics & Graphic Novels',
+      'Children\'s Books',
+      'Young Adult',
+      'Educational'
+    ];
+
+    try {
+      const categories = defaultCategories.map(name => ({
+        name,
+        user_id: userId
+      }));
+      await supabase.from('categories').insert(categories);
+    } catch (err) {
+      console.warn('Failed to create default categories:', err);
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
 
     // Better validation with field-level messages
+    if (mode === 'sign-up') {
+      if (!firstName || !lastName) {
+        setError('Please provide your first and last name.');
+        setLoading(false);
+        return;
+      }
+      if (firstName.length > 100 || lastName.length > 100) {
+        setError('Name fields must be 100 characters or less.');
+        setLoading(false);
+        return;
+      }
+      const signUpDate = new Date().toISOString();
+    }
+    
     if (!email || !password) {
       setError('Please provide both email and password.');
       setLoading(false);
@@ -54,16 +103,36 @@ export default function AuthScreen() {
 
     try {
       if (mode === 'sign-up') {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        // Include first/last name in user_metadata so we can show it in profile
+        const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { 
+            data: { 
+              first_name: firstName, 
+              last_name: lastName,
+              created_at: new Date().toISOString()
+            } 
+          },
+        });
+        
         if (signUpError) throw signUpError;
-        Alert.alert('Success', 'Check your email to confirm your account.');
+
+        // Create default categories for the new user
+        if (user) {
+          await createDefaultCategories(user.id);
+        }
+
+        Alert.alert('Success', 'Check your email to confirm your account. Then sign in.');
         setMode('sign-in');
         setPassword('');
+        setFirstName('');
+        setLastName('');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        // On success navigate to home
-        router.replace('/home');
+        // On success navigate to home (tabs)
+        router.replace('/');
       }
     } catch (err: any) {
       // Map common Supabase errors to friendlier messages
@@ -132,6 +201,26 @@ export default function AuthScreen() {
           editable={!loading}
           accessibilityLabel="Password"
         />
+        {mode === 'sign-up' ? (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="First Name"
+              value={firstName}
+              onChangeText={setFirstName}
+              editable={!loading}
+              accessibilityLabel="First Name"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Last Name"
+              value={lastName}
+              onChangeText={setLastName}
+              editable={!loading}
+              accessibilityLabel="Last Name"
+            />
+          </>
+        ) : null}
 
         <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading} accessibilityLabel="Authenticate">
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{mode === 'sign-up' ? 'Sign Up' : 'Sign In'}</Text>}

@@ -1,4 +1,4 @@
-import { Stack, useRouter, usePathname } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { supabase } from '../supabase';
 

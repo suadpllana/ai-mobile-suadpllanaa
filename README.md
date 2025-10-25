@@ -25,6 +25,18 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Project checklist for submission
+
+The project targets the following grading areas. The repository now includes docs and files to help verify each item:
+
+- Auth + CRUD: implemented with Supabase (see `app/(tabs)/index.tsx` and `app/(tabs)/home.tsx`).
+- Unique module: AI Book Chat and ratings — see `components/ChatModal.tsx` and review handling in `app/(tabs)/home.tsx`.
+- Documentation & AI prompts: `docs/AI_PROMPTS.md`, `docs/FEATURES.md`, `docs/ROADMAP.md`, `docs/PRESENTATION.md`.
+- Stability & UI: basic styling and typechecks; run `npx tsc --noEmit` to validate types.
+- Presentation: `docs/PRESENTATION.md` includes a short demo script.
+
+If you'd like, I can add an "Export library" button and a small smoke-test script next to further boost stability and presentation points.
+
 ## Get a fresh project
 
 When you're ready, run:

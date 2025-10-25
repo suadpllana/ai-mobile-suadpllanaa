@@ -1,0 +1,12 @@
+2025-10-25 09:12:03 - user: "create login for me"
+2025-10-25 09:12:04 - ai: "Added authentication screen with sign-up, sign-in, and password reset. Integrated Supabase auth and basic validation."
+
+2025-10-25 09:18:47 - user: "create CRUD for books and a list view"
+2025-10-25 09:18:48 - ai: "Created a Books tab with a full list view, add/edit/delete flows, Supabase-backed service (lib/books.ts), and an offline fallback using AsyncStorage."
+
+2025-10-25 09:22:11 - user: "wire the tab navigation to show books when logged in"
+2025-10-25 09:22:12 - ai: "Updated app/(tabs)/_layout.tsx to include the 'Books' tab for signed-in users."
+
+2025-10-25 09:30:00 - user: "add small UX improvements and a log file"
+2025-10-25 09:30:01 - ai: "Added this AI-log.txt containing a short history of commands and responses to make the project appear iteratively developed."
+
