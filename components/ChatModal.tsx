@@ -21,7 +21,7 @@ type Props = {
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
-const HUGGING_FACE_API_TOKEN = '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';
+const HUGGING_FACE_API_TOKEN = process.env.EXPO_PUBLIC_HUGGINGFACE_API_KEY;
 const HUGGING_FACE_API_URL = 'https://api-inference.huggingface.co/models/meta-llama/Llama-3.1-8B-Instruct';
 
 export default function ChatModal({ visible, onClose, userId }: Props) {
