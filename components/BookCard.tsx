@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Props = {
@@ -11,12 +11,14 @@ type Props = {
   onPress?: (book: any) => void;
   imageUrl?: string | null;
 };
+const defaultIamage = 'https://placehold.co/600x400';
 
 export default function BookCard({ book, categoryName, onEdit, onDelete, renderStars, onPress, imageUrl }: Props) {
   return (
     <TouchableOpacity onPress={() => onPress?.(book)} activeOpacity={0.85}>
       <View style={styles.bookCard}>
-  <Image source={imageUrl ? { uri: imageUrl } : require('../assets/images/icon.png')} style={styles.thumbnail} />
+  <Image source={imageUrl ? { uri: imageUrl } : { uri: defaultIamage }}
+   style={styles.thumbnail} />
         <Text style={styles.bookTitle}>{book.title}</Text>
         <Text style={styles.bookAuthor}>{book.author}</Text>
         {book.description ? <Text style={styles.bookDescription} numberOfLines={2}>{book.description}</Text> : null}

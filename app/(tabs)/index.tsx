@@ -16,6 +16,8 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState(''); // New state for Name
+  const [surname, setSurname] = useState(''); // New state for Surname
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,7 +37,7 @@ export default function AuthScreen() {
     setLoading(true);
     setError('');
 
-    // Better validation with field-level messages
+    // Validation
     if (!email || !password) {
       setError('Please provide both email and password.');
       setLoading(false);
@@ -51,22 +53,36 @@ export default function AuthScreen() {
       setLoading(false);
       return;
     }
+    if (mode === 'sign-up' && (!name || !surname)) {
+      setError('Please provide both name and surname.');
+      setLoading(false);
+      return;
+    }
 
     try {
       if (mode === 'sign-up') {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              display_name: `${name} ${surname}`, // Combine name and surname for display_name
+            },
+          },
+        });
         if (signUpError) throw signUpError;
         Alert.alert('Success', 'Check your email to confirm your account.');
         setMode('sign-in');
+        setEmail('');
         setPassword('');
+        setName('');
+        setSurname('');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        // On success navigate to home
         router.replace('/home');
       }
     } catch (err: any) {
-      // Map common Supabase errors to friendlier messages
       const msg =
         err?.message ||
         (err?.status === 400 ? 'Invalid credentials.' : undefined) ||
@@ -94,7 +110,6 @@ export default function AuthScreen() {
     }
 
     try {
-      // Supabase v2: resetPasswordForEmail
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotEmail);
       if (resetError) throw resetError;
       setForgotMessage('If an account exists, a password reset email was sent.');
@@ -112,7 +127,28 @@ export default function AuthScreen() {
         <Text style={styles.subtitle}>{mode === 'sign-up' ? 'Create your account' : 'Welcome back'}</Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
-
+    {mode === 'sign-up' && (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              editable={!loading}
+              accessibilityLabel="Name"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Surname"
+              value={surname}
+              onChangeText={setSurname}
+              autoCapitalize="words"
+              editable={!loading}
+              accessibilityLabel="Surname"
+            />
+          </>
+        )}
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -123,6 +159,7 @@ export default function AuthScreen() {
           editable={!loading}
           accessibilityLabel="Email"
         />
+    
         <TextInput
           style={styles.input}
           placeholder="Password"

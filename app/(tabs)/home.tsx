@@ -487,6 +487,12 @@ export default function HomeScreen() {
       >
         <Text style={styles.submitButtonText}>Add New Book</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.submitButton, loading && styles.disabledButton, { marginTop: 8 }]}
+        onPress={openCategoryModal}
+        disabled={loading}>
+        <Text style={styles.submitButtonText}>Add new Category</Text>
+      </TouchableOpacity>
 
       {/* Add Category button removed per request */}
 

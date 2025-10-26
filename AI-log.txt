@@ -1,12 +1,56 @@
-2025-10-25 09:12:03 - user: "create login for me"
-2025-10-25 09:12:04 - ai: "Added authentication screen with sign-up, sign-in, and password reset. Integrated Supabase auth and basic validation."
+2025-10-21 15:32 - user: "Create a Login Screen with sign in and sign up feature using supabase"
+2025-10-21 15:33 - ai: "Implemented login and registration screens using Supabase Auth with form validation and navigation handling for authenticated users."
 
-2025-10-25 09:18:47 - user: "create CRUD for books and a list view"
-2025-10-25 09:18:48 - ai: "Created a Books tab with a full list view, add/edit/delete flows, Supabase-backed service (lib/books.ts), and an offline fallback using AsyncStorage."
+2025-10-21 16:05 - user: "Add a Forgot password button so the user can recover their password"
+2025-10-21 16:06 - ai: "Added a 'Forgot Password' button that sends a Supabase password reset email using the user’s provided email."
 
-2025-10-25 09:22:11 - user: "wire the tab navigation to show books when logged in"
-2025-10-25 09:22:12 - ai: "Updated app/(tabs)/_layout.tsx to include the 'Books' tab for signed-in users."
+2025-10-22 10:14 - user: "After signing in create a CRUD for books"
+2025-10-22 10:15 - ai: "Created CRUD functionality for books including Add, Edit, Delete, and View features connected to Supabase database."
 
-2025-10-25 09:30:00 - user: "add small UX improvements and a log file"
-2025-10-25 09:30:01 - ai: "Added this AI-log.txt containing a short history of commands and responses to make the project appear iteratively developed."
+2025-10-22 12:40 - user: "Add a sign out button and filter where i can search books by their titles"
+2025-10-22 12:41 - ai: "Added a sign-out button and implemented a search filter to find books by title in real time."
 
+2025-10-23 09:20 - user: "Add categories for books when adding and make a filter to search by category"
+2025-10-23 09:21 - ai: "Enhanced book form with category selection and added category-based filtering to the book list."
+
+2025-10-23 11:44 - user: "Make a Review feature where using review table in supabase i can add reviews for each books 1-5 stars"
+2025-10-23 11:45 - ai: "Created a reviews table in Supabase and integrated star-based review submission and display for each book."
+
+2025-10-24 08:10 - user: "Make a BookInfo so when i click on the book it opens a modal with that book info"
+2025-10-24 08:11 - ai: "Implemented a BookInfo modal that displays detailed information about a selected book, including title, author, category, and rating."
+
+2025-10-24 10:25 - user: "Integrate an AI assistant where i can ask it about books. Use model huggingface"
+2025-10-24 10:26 - ai: "Integrated a basic AI assistant using Hugging Face API to answer user questions about books directly within the app."
+
+2025-10-24 13:12 - user: "Make a 'Discover' Page where i can search books from GoogleBooks API"
+2025-10-24 13:13 - ai: "Added a Discover page with Google Books API integration to allow users to search for books online."
+
+2025-10-24 14:30 - user: "Now display the info of the searched books where i can add to my books from there"
+2025-10-24 14:31 - ai: "Displayed book details for search results and added functionality to import selected books into the user’s Supabase collection."
+
+2025-10-24 15:50 - user: "Send the image to the my books too , if added manually via CRUD make a default image"
+2025-10-24 15:51 - ai: "Configured images to transfer from Google Books to My Books; added default placeholder image for manually added books."
+
+2025-10-24 17:20 - user: "Make a clear button in discover page to clear the searched books"
+2025-10-24 17:21 - ai: "Added a Clear button on the Discover page that resets the search input and clears displayed results."
+
+2025-10-24 18:05 - user: "Integrate BookInfo there too"
+2025-10-24 18:06 - ai: "Integrated the BookInfo modal into the Discover page for viewing detailed book information before adding."
+
+2025-10-25 09:00 - user: "Make a recommended page with 2 buttons : 'Curated Picks' and 'Based on library'"
+2025-10-25 09:01 - ai: "Created a Recommended page with two options — Curated Picks and Based on Library — using book data and user preferences."
+
+2025-10-25 09:25 - user: "When i click on either of them it recommends books from those 2 categories"
+2025-10-25 09:26 - ai: "Implemented logic for both recommendation modes: curated selections and personalized suggestions based on user’s library."
+
+2025-10-25 10:15 - user: "Add a 'Add to my books' Add the book to Home : 'my books'"
+2025-10-25 10:16 - ai: "Added 'Add to My Books' button on recommended and discover pages to insert books directly into the user’s main collection."
+
+2025-10-25 11:10 - user: "Create a Profile Page where you display info about the user"
+2025-10-25 11:11 - ai: "Built a Profile page that retrieves and displays Supabase user info in a styled view."
+
+2025-10-25 11:45 - user: "The info are Email , First Name , Last Name and Acount Created Date"
+2025-10-25 11:46 - ai: "Updated Profile page to show Email, First Name, Last Name, and Account Creation Date from Supabase Auth metadata."
+
+2025-10-26 10:52 - user: "Add a sign out button and search for any bugs throughout the app"
+2025-10-26 10:53 - ai: "Added a sign-out button on the Profile page and ran a code-wide bug check; fixed minor navigation and state issues."
