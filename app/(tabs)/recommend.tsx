@@ -53,6 +53,8 @@ export default function RecommendScreen() {
         author: book.author || 'Unknown',
         description: book.description || '',
         user_id: userId,
+        // books added from Recommendations should be 'already read' by default
+        status: 'already read',
       };
       if (book.image) {
         payload.image = book.image;
@@ -74,7 +76,7 @@ export default function RecommendScreen() {
       const res = await supabase.from('books').insert([payload]).select('*').single();
       if (res.error) {
         console.warn('Insert error', res.error);
-        const retry = await supabase.from('books').insert([{ title: book.title, author: book.author || 'Unknown', description: book.description || '', user_id: userId }]).select('*').single();
+  const retry = await supabase.from('books').insert([{ title: book.title, author: book.author || 'Unknown', description: book.description || '', user_id: userId, status: 'already read' }]).select('*').single();
         if (retry.error) {
           Alert.alert('Error', retry.error.message || 'Failed to add to library');
           throw retry.error;

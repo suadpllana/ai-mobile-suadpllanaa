@@ -11,6 +11,7 @@ type Book = {
   description?: string;
   user_id?: string;
   category_id?: string;
+  status?: string;
 };
 
 export default function DiscoverScreen() {
@@ -75,6 +76,8 @@ export default function DiscoverScreen() {
         author: book.author || 'Unknown',
         description: book.description || '',
         user_id: userId,
+        // mark books added from Discover as already read by default
+        status: 'already read',
       };
 
       // If Google Books provides categories, try to create/find a matching category for the user
@@ -118,7 +121,7 @@ export default function DiscoverScreen() {
       if (res.error) {
         console.warn('Insert error, retrying without optional columns', res.error);
         // retry without image or category if DB doesn't accept those columns and request returned row
-        const retry = await supabase.from('books').insert([{ title: book.title, author: book.author || 'Unknown', description: book.description || '', user_id: userId }]).select('*').single();
+  const retry = await supabase.from('books').insert([{ title: book.title, author: book.author || 'Unknown', description: book.description || '', user_id: userId, status: 'already read' }]).select('*').single();
         if (retry.error) {
           // both attempts failed — show user the error
           Alert.alert('Error', retry.error.message || 'Failed to add book (insert)');

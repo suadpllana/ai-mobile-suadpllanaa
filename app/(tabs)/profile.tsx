@@ -172,11 +172,9 @@ export default function ProfileScreen() {
             <Text style={styles.label}>Email</Text>
             <Text style={styles.value}>{user.email}</Text>
 
-            <Text style={styles.label}>First Name</Text>
-            <Text style={styles.value}>{user.user_metadata?.first_name || 'Not set'}</Text>
+            <Text style={styles.label}>Name:</Text>
+            <Text style={styles.value}>{user.user_metadata.display_name || 'Not set'}</Text>
 
-            <Text style={styles.label}>Last Name</Text>
-            <Text style={styles.value}>{user.user_metadata?.last_name || 'Not set'}</Text>
 
             <Text style={styles.label}>Account Created</Text>
             <Text style={styles.value}>{new Date(user.created_at).toLocaleDateString()}</Text>

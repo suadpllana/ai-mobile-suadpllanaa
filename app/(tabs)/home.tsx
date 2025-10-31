@@ -3,15 +3,15 @@ import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SelectList } from 'react-native-dropdown-select-list';
 import BookCard from '../../components/BookCard';
@@ -26,6 +26,7 @@ type Book = {
   description: string;
   user_id: string;
   category_id?: string;
+  status?: string;
 };
 
 type Review = {
@@ -56,6 +57,7 @@ export default function HomeScreen() {
   const [author, setAuthor] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState<string>('');
+  const [status, setStatus] = useState<string>('want to read');
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState<string>('all');
@@ -84,6 +86,12 @@ export default function HomeScreen() {
       key: category.id,
       value: category.name,
     })),
+  ];
+
+  const statusOptions = [
+    { key: 'want to read', value: 'Want to read' },
+    { key: 'reading', value: 'Reading' },
+    { key: 'already read', value: 'Already read' },
   ];
 
   
@@ -193,7 +201,7 @@ export default function HomeScreen() {
       if (editingBook) {
         const { error } = await supabase
           .from('books')
-          .update({ title, author, description, category_id: categoryId, user_id: userId })
+          .update({ title, author, description, category_id: categoryId, user_id: userId, status })
           .eq('id', editingBook.id)
           .eq('user_id', userId);
         if (error) throw error;
@@ -201,10 +209,10 @@ export default function HomeScreen() {
       } else {
         // When adding manually, provide a default image. If the DB doesn't have an image column,
         // retry without the image field.
-        const payload: any = { title, author, description, category_id: categoryId, user_id: userId, image: DEFAULT_IMAGE };
+        const payload: any = { title, author, description, category_id: categoryId, user_id: userId, image: DEFAULT_IMAGE, status: status || 'want to read' };
         let res = await supabase.from('books').insert([payload]);
         if (res.error) {
-          const { error } = await supabase.from('books').insert([{ title, author, description, category_id: categoryId, user_id: userId }]);
+          const { error } = await supabase.from('books').insert([{ title, author, description, category_id: categoryId, user_id: userId, status: status || 'want to read' }]);
           if (error) throw error;
         }
         Alert.alert('Success', 'Book added successfully');
@@ -213,6 +221,7 @@ export default function HomeScreen() {
       setAuthor('');
       setDescription('');
       setCategoryId('');
+      setStatus('want to read');
       setEditingBook(null);
       setModalVisible(false);
       const { data, error } = await supabase
@@ -275,6 +284,7 @@ export default function HomeScreen() {
     setAuthor(book.author);
     setDescription(book.description || '');
     setCategoryId(book.category_id || '');
+    setStatus(book.status || 'want to read');
     setModalVisible(true);
   };
 
@@ -382,6 +392,7 @@ export default function HomeScreen() {
     setAuthor('');
     setDescription('');
     setCategoryId(categories[0]?.id || '');
+    setStatus('want to read');
     setEditingBook(null);
     setModalVisible(true);
   };
@@ -529,6 +540,17 @@ export default function HomeScreen() {
                   setSelected={(value: string) => setCategoryId(value)}
                   data={bookCategoryOptions}
                   placeholder="Select Category"
+                  search={false}
+                  boxStyles={styles.selectBox}
+                  inputStyles={styles.selectInput}
+                  dropdownStyles={styles.selectDropdown}
+                />
+              </View>
+              <View style={styles.selectContainer}>
+                <SelectList
+                  setSelected={(value: string) => setStatus(value)}
+                  data={statusOptions}
+                  placeholder="Status"
                   search={false}
                   boxStyles={styles.selectBox}
                   inputStyles={styles.selectInput}

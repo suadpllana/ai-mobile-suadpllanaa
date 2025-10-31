@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Props = {
@@ -11,18 +11,20 @@ type Props = {
   onPress?: (book: any) => void;
   imageUrl?: string | null;
 };
-const defaultIamage = 'https://placehold.co/600x400';
-
 export default function BookCard({ book, categoryName, onEdit, onDelete, renderStars, onPress, imageUrl }: Props) {
   return (
     <TouchableOpacity onPress={() => onPress?.(book)} activeOpacity={0.85}>
       <View style={styles.bookCard}>
-  <Image source={imageUrl ? { uri: imageUrl } : { uri: defaultIamage }}
-   style={styles.thumbnail} />
+  <Image
+    source={imageUrl ? { uri: imageUrl } : require('../assets/images/image.png')}
+    style={styles.thumbnail}
+    resizeMode="cover"
+  />
         <Text style={styles.bookTitle}>{book.title}</Text>
         <Text style={styles.bookAuthor}>{book.author}</Text>
         {book.description ? <Text style={styles.bookDescription} numberOfLines={2}>{book.description}</Text> : null}
-        <Text style={styles.bookCategory}>Category: {categoryName || 'Uncategorized'}</Text>
+  <Text style={styles.bookCategory}>Category: {categoryName || 'Uncategorized'}</Text>
+  {book.status ? <Text style={styles.bookStatus}>Status: {typeof book.status === 'string' ? book.status : String(book.status)}</Text> : null}
         {renderStars(book.id)}
         <View style={styles.bookActions}>
           <TouchableOpacity style={[styles.actionButton, styles.editButton]} onPress={() => onEdit(book)}>
@@ -55,4 +57,5 @@ const styles = StyleSheet.create({
   deleteButton: { backgroundColor: '#dc2626' },
   actionButtonText: { color: '#fff', fontSize: 14, fontWeight: '500' },
   thumbnail: { width: 100, height: 150, marginBottom: 8 },
+  bookStatus: { fontSize: 14, color: '#4b5563', marginBottom: 8 },
 });
