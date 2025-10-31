@@ -17,14 +17,24 @@ export default function BookModal({ visible, onClose, book }: Props) {
   if (!book) return null;
   const imageSrc = (book as any).imageUrl || (book as any).image || (book as any).image_url || (book as any).cover_image || null;
 
+  // use the same bundled defaults as other components (BookCard)
+  const bundledDefault = require('../assets/images/react-logo.png');
+  const bundledFallback = require('../assets/images/image.png');
+  const [imgSource, setImgSource] = React.useState<any>(imageSrc ? { uri: imageSrc } : bundledDefault);
+
+  React.useEffect(() => {
+    setImgSource(imageSrc ? { uri: imageSrc } : bundledDefault);
+  }, [imageSrc]);
+
+  const onImageError = () => setImgSource(bundledFallback);
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.card}>
           <ScrollView>
-            {imageSrc ? (
-              <Image source={{ uri: imageSrc }} style={styles.image} resizeMode="contain" />
-            ) : null}
+            {/* Always render an image; fall back to bundled default/fallback when remote image is missing or fails */}
+            <Image source={imgSource} style={styles.image} resizeMode="contain" onError={onImageError} />
             <Text style={styles.title}>{book.title}</Text>
             <Text style={styles.author}>{book.author}</Text>
             {book.description ? <Text style={styles.description}>{book.description}</Text> : <Text style={styles.description}>No description available.</Text>}
