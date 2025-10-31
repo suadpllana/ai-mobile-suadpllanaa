@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,9 +10,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { supabase } from '../../supabase';
+import { supabase } from '../supabase'
 
 export default function AuthScreen() {
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      if (session) router.replace('/home');
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) router.replace('/home');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -175,7 +189,7 @@ export default function AuthScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')} accessibilityRole="button">
-          <Text style={styles.toggle}>{mode === 'sign-in' ? 'Don’t have an account? Sign Up' : 'Already have an account? Sign In'}</Text>
+          <Text style={styles.toggle}>{mode === 'sign-in' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}</Text>
         </TouchableOpacity>
 
         {mode === 'sign-in' ? (
@@ -190,7 +204,7 @@ export default function AuthScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Reset password</Text>
-            <Text style={styles.modalSubtitle}>Enter your email and we'll send reset instructions.</Text>
+            <Text style={styles.modalSubtitle}>Enter your email and we will send reset instructions.</Text>
             {forgotMessage ? <Text style={styles.feedback}>{forgotMessage}</Text> : null}
             <TextInput
               style={styles.input}

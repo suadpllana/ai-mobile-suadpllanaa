@@ -227,7 +227,7 @@ export default function AuthScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')} accessibilityRole="button">
-          <Text style={styles.toggle}>{mode === 'sign-in' ? 'Don’t have an account? Sign Up' : 'Already have an account? Sign In'}</Text>
+          <Text style={styles.toggle}>{mode === 'sign-in' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}</Text>
         </TouchableOpacity>
 
         {mode === 'sign-in' ? (
@@ -242,7 +242,7 @@ export default function AuthScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Reset password</Text>
-            <Text style={styles.modalSubtitle}>Enter your email and we'll send reset instructions.</Text>
+            <Text style={styles.modalSubtitle}>Enter your email and we will send reset instructions.</Text>
             {forgotMessage ? <Text style={styles.feedback}>{forgotMessage}</Text> : null}
             <TextInput
               style={styles.input}

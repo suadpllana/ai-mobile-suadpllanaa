@@ -1,19 +1,18 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 
 export default function Layout() {
   const router = useRouter();
   const pathname = usePathname();
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session && pathname !== '/') {
-        router.replace('/');
-      }
-    });
+    let mounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      setHasSession(!!session);
       if (!session && pathname !== '/') {
         router.replace('/');
       } else if (session && pathname === '/') {
@@ -21,13 +20,31 @@ export default function Layout() {
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [pathname]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setHasSession(!!session);
+      if (!session && pathname !== '/') {
+        router.replace('/');
+      } else if (session && pathname === '/') {
+        router.replace('/home');
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [pathname, router]);
+
+  // Avoid flicker while we determine auth status
+  if (hasSession === null) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="home" />
+      {/* Only include the index screen when not authenticated */}
+      {!hasSession && <Stack.Screen name="index" />}
+      {/* Only include home when authenticated (keeps routes tidy) */}
+      {hasSession && <Stack.Screen name="home" />}
     </Stack>
   );
 }
