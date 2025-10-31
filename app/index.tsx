@@ -9,8 +9,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Animated,
+  Easing,
+  Keyboard,
 } from 'react-native';
-import { supabase } from '../supabase'
+import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from '../supabase';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function AuthScreen() {
   useEffect(() => {
@@ -30,8 +35,8 @@ export default function AuthScreen() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState(''); // New state for Name
-  const [surname, setSurname] = useState(''); // New state for Surname
+  const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -41,7 +46,53 @@ export default function AuthScreen() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState('');
 
-  // Simple email validation
+  // Animations
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(0.9));
+  const [keyboardOffset] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 120,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+useEffect(() => {
+  const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    Animated.timing(keyboardOffset, {
+      toValue: -120,
+      duration: 250,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  });
+
+  const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+    Animated.timing(keyboardOffset, {
+      toValue: 0,
+      duration: 250,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  });
+
+  return () => {
+    keyboardDidShowListener.remove();
+    keyboardDidHideListener.remove();
+  };
+}, [keyboardOffset]);
+
   const validateEmail = (value: string) => {
     const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
     return re.test(String(value).toLowerCase());
@@ -51,7 +102,6 @@ export default function AuthScreen() {
     setLoading(true);
     setError('');
 
-    // Validation
     if (!email || !password) {
       setError('Please provide both email and password.');
       setLoading(false);
@@ -80,7 +130,7 @@ export default function AuthScreen() {
           password,
           options: {
             data: {
-              display_name: `${name} ${surname}`, // Combine name and surname for display_name
+              display_name: `${name} ${surname}`,
             },
           },
         });
@@ -135,203 +185,472 @@ export default function AuthScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>{mode === 'sign-up' ? 'Sign Up' : 'Sign In'}</Text>
-        <Text style={styles.subtitle}>{mode === 'sign-up' ? 'Create your account' : 'Welcome back'}</Text>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-    {mode === 'sign-up' && (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              editable={!loading}
-              accessibilityLabel="Name"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Surname"
-              value={surname}
-              onChangeText={setSurname}
-              autoCapitalize="words"
-              editable={!loading}
-              accessibilityLabel="Surname"
-            />
-          </>
-        )}
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!loading}
-          accessibilityLabel="Email"
-        />
+    <LinearGradient
+      colors={['#667eea', '#764ba2', '#f093fb']}
+      style={styles.gradientBackground}
+    >
     
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-          accessibilityLabel="Password"
-        />
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading} accessibilityLabel="Authenticate">
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{mode === 'sign-up' ? 'Sign Up' : 'Sign In'}</Text>}
-        </TouchableOpacity>
+      <Animated.View style={[
+        styles.container,
+        {
+          opacity: fadeAnim,
+          transform: [
+            { scale: scaleAnim },
+            { translateY: keyboardOffset },
+          ],
+        }
+      ]}>
+   
 
-        <TouchableOpacity onPress={() => setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')} accessibilityRole="button">
-          <Text style={styles.toggle}>{mode === 'sign-in' ? "Don't have an account? Sign Up" : 'Already have an account? Sign In'}</Text>
-        </TouchableOpacity>
+        <Animated.View style={[styles.card, {
+          opacity: fadeAnim,
+          transform: [{ scale: scaleAnim }],
+        }]}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+            style={styles.glassCard}
+          >
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <View style={styles.logo}>
+                  <Ionicons name="sparkles" size={32} color="#6366f1" />
+                </View>
+              </View>
+              <Text style={styles.subtitle}>
+                {mode === 'sign-up' ? 'Create your account to get started' : 'Sign in to your account'}
+              </Text>
+            </View>
 
-        {mode === 'sign-in' ? (
-          <TouchableOpacity onPress={() => { setForgotVisible(true); setForgotEmail(email); }} style={styles.forgot}>
-            <Text style={styles.forgotText}>Forgot password?</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+            {error ? (
+              <Animated.View style={[styles.errorContainer, { opacity: fadeAnim }]}>
+                <Ionicons name="alert-circle" size={20} color="#f87171" />
+                <Text style={styles.errorText}>{error}</Text>
+              </Animated.View>
+            ) : null}
 
-      {/* Forgot Password Modal */}
-      <Modal visible={forgotVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Reset password</Text>
-            <Text style={styles.modalSubtitle}>Enter your email and we will send reset instructions.</Text>
-            {forgotMessage ? <Text style={styles.feedback}>{forgotMessage}</Text> : null}
+            {mode === 'sign-up' && (
+              <>
+                <TextInput
+                  style={[styles.input, styles.glassInput]}
+                  placeholder="First Name"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                  editable={!loading}
+                  placeholderTextColor="#9CA3AF"
+                />
+                <TextInput
+                  style={[styles.input, styles.glassInput]}
+                  placeholder="Last Name"
+                  value={surname}
+                  onChangeText={setSurname}
+                  autoCapitalize="words"
+                  editable={!loading}
+                  placeholderTextColor="#9CA3AF"
+                />
+              </>
+            )}
+
             <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={forgotEmail}
-              onChangeText={setForgotEmail}
+              style={[styles.input, styles.glassInput]}
+              placeholder="Email Address"
+              value={email}
+              onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              editable={!forgotLoading}
+              editable={!loading}
+              placeholderTextColor="#9CA3AF"
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleSendReset} disabled={forgotLoading}>
-              {forgotLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send reset email</Text>}
+            <TextInput
+              style={[styles.input, styles.glassInput]}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!loading}
+              placeholderTextColor="#9CA3AF"
+            />
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={loading ? ['#9CA3AF', '#9CA3AF'] : ['#6366f1', '#8b5cf6']}
+                style={styles.buttonGradient}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.buttonText}>
+                    {mode === 'sign-up' ? 'Create Account' : 'Sign In'}
+                  </Text>
+                )}
+              </LinearGradient>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setForgotVisible(false)}>
-              <Text style={styles.toggle}>Close</Text>
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.toggleText}>
+                {mode === 'sign-in' 
+                  ? "Don't have an account? Create one" 
+                  : 'Already have an account? Sign in'
+                }
+              </Text>
             </TouchableOpacity>
-          </View>
-        </View>
+
+            {mode === 'sign-in' && (
+              <TouchableOpacity
+                style={styles.forgotButton}
+                onPress={() => {
+                  setForgotVisible(true);
+                  setForgotEmail(email);
+                }}
+              >
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            )}
+          </LinearGradient>
+        </Animated.View>
+      </Animated.View>
+
+      {/* Enhanced Forgot Password Modal */}
+      <Modal visible={forgotVisible} animationType="fade" transparent>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setForgotVisible(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalCardContainer}>
+            <LinearGradient
+              colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
+              style={styles.modalGlassCard}
+            >
+              <View style={styles.modalHeader}>
+                <Ionicons name="key-outline" size={32} color="#6366f1" />
+                <Text style={styles.modalTitle}>Reset Password</Text>
+                <Text style={styles.modalSubtitle}>Enter your email to receive reset instructions</Text>
+              </View>
+
+              {forgotMessage ? (
+                <View style={[
+                  styles.modalFeedback,
+                  forgotMessage.includes('sent') ? styles.successFeedback : styles.errorFeedback
+                ]}>
+                  <Ionicons 
+                    name={forgotMessage.includes('sent') ? "checkmark-circle" : "alert-circle"} 
+                    size={20} 
+                    color={forgotMessage.includes('sent') ? "#10b981" : "#f87171"} 
+                  />
+                  <Text style={styles.modalFeedbackText}>{forgotMessage}</Text>
+                </View>
+              ) : null}
+
+              <TextInput
+                style={[styles.modalInput, styles.glassInput]}
+                placeholder="Enter your email"
+                value={forgotEmail}
+                onChangeText={setForgotEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!forgotLoading}
+                placeholderTextColor="#9CA3AF"
+              />
+
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={handleSendReset}
+                disabled={forgotLoading}
+              >
+                <LinearGradient
+                  colors={forgotLoading ? ['#9CA3AF', '#9CA3AF'] : ['#6366f1', '#8b5cf6']}
+                  style={styles.modalButtonGradient}
+                >
+                  {forgotLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.modalButtonText}>Send Reset Link</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setForgotVisible(false)}
+              >
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradientBackground: {
+    flex: 1,
+  },
+  floatingShape1: {
+    position: 'absolute',
+    top: 50,
+    right: 30,
+    zIndex: 1,
+  },
+  floatingShape2: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    zIndex: 1,
+  },
+  floatingShape3: {
+    position: 'absolute',
+    top: '50%',
+    right: '20%',
+    zIndex: 1,
+  },
+
+
+
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
     justifyContent: 'center',
-    padding: 20,
+    alignItems: 'center',
+    padding: 24,
+    paddingTop: 80,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 60,
+    left: 24,
+    zIndex: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backdropFilter: 'blur(10px)',
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    width: '100%',
+    maxWidth: 420,
+    marginBottom: 40,
+  },
+  glassCard: {
+    padding: 40,
+    borderRadius: 24,
+    backdropFilter: 'blur(20px)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  logo: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 36,
+    fontWeight: '800',
+    color: 'white',
     textAlign: 'center',
-    color: '#333',
+    letterSpacing: -0.5,
     marginBottom: 8,
+    textShadowColor: 'rgba(0,0,0,0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
+    color: 'rgba(255,255,255,0.85)',
     textAlign: 'center',
-    color: '#666',
-    marginBottom: 32,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  button: {
-    backgroundColor: '#6366f1',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  toggle: {
-    textAlign: 'center',
-    color: '#6366f1',
-    fontSize: 16,
+    lineHeight: 24,
     fontWeight: '500',
   },
-  error: {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
-    padding: 12,
-    borderRadius: 8,
-    textAlign: 'center',
-    marginBottom: 16,
-    fontSize: 14,
+  input: {
+    marginBottom: 20,
+    padding: 20,
+    fontSize: 16,
+    borderRadius: 16,
+    fontWeight: '500',
   },
-  forgot: {
+  glassInput: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    color: 'white',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(248,113,113,0.2)',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.3)',
+  },
+  errorText: {
+    color: '#fee2e2',
+    fontSize: 14,
+    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
+  },
+  button: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  buttonGradient: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  toggleButton: {
+    paddingVertical: 16,
+  },
+  toggleText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  forgotButton: {
     marginTop: 8,
+    paddingVertical: 12,
   },
   forgotText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
-    color: '#374151',
+    letterSpacing: 0.3,
   },
+  // Modal Styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 20,
-  },
-  modalCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     padding: 24,
+  },
+  modalCardContainer: {
     width: '100%',
     maxWidth: 420,
   },
+  modalGlassCard: {
+    borderRadius: 24,
+    padding: 32,
+    backdropFilter: 'blur(20px)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 20 },
+    shadowOpacity: 0.3,
+    shadowRadius: 40,
+    elevation: 20,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 6,
+    fontSize: 28,
+    fontWeight: '800',
+    color: 'white',
+    marginTop: 12,
+    marginBottom: 4,
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
+    lineHeight: 22,
   },
-  feedback: {
+  modalInput: {
+    marginBottom: 24,
+  },
+  modalFeedback: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  successFeedback: {
+    backgroundColor: 'rgba(16,185,129,0.2)',
+    borderColor: 'rgba(16,185,129,0.3)',
+  },
+  errorFeedback: {
+    backgroundColor: 'rgba(248,113,113,0.2)',
+    borderColor: 'rgba(248,113,113,0.3)',
+  },
+  modalFeedbackText: {
+    color: 'white',
+    fontSize: 14,
+    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
+  },
+  modalButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  modalButtonGradient: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  modalCloseButton: {
+    paddingVertical: 16,
+  },
+  modalCloseText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 16,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 12,
-    color: '#111827',
   },
 });

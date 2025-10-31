@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInDown
+} from 'react-native-reanimated';
 import { supabase } from '../supabase';
 
 type Props = {
@@ -28,73 +35,81 @@ export default function ChatModal({ visible, onClose, userId }: Props) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
 
-  const validateInput = (text: string) => text && text.trim().length > 0;
+  const [spinning, setSpinning] = useState(false);
+
+  useEffect(() => {
+    setSpinning(chatLoading);
+  }, [chatLoading]);
+
+  const validateInput = (text: string) => text?.trim().length > 0;
 
   const buildLocalResponse = (book: any, userQuestion: string) => {
     const desc = book.description || 'No description available.';
-    return `Here's what I found for "${book.title}" by ${book.author} — ${desc} \n\nIf you'd like, ask for themes, similar books, or a short spoiler-free summary.`;
+    return `Here's what I found for "${book.title}" by ${book.author}:\n\n${desc}\n\nWant a spoiler-free summary, themes, or similar books? Just ask!`;
+  };
+
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   const handleSend = async () => {
     if (!validateInput(chatInput)) return;
     if (!userId) {
-      setChatHistory(prev => [...prev, { role: 'assistant', content: 'No authenticated user found.' }]);
+      setChatHistory(prev => [...prev, { role: 'assistant', content: 'Please sign in to use the chat.' }]);
       return;
     }
 
-    const userMessage = chatInput;
+    const userMessage = chatInput.trim();
     setChatHistory(prev => [...prev, { role: 'user', content: userMessage }]);
+    setChatInput('');
     setChatLoading(true);
+    scrollToBottom();
 
     try {
-      // Try Supabase first to find a book in the user's library
       let book: any = null;
+
+      // 1. Try user's library
       try {
-        const { data: searchResults, error: searchError } = await supabase
+        const { data, error } = await supabase
           .from('books')
-          .select('*')
+          .select('title, author, description')
           .eq('user_id', userId)
           .ilike('title', `%${userMessage}%`)
           .limit(1);
-        if (searchError) throw searchError;
-        if (searchResults && searchResults.length > 0) book = searchResults[0];
-      } catch (err) {
-        // ignore supabase lookup errors and continue to external lookup
-        book = null;
-      }
+        if (!error && data?.length) book = data[0];
+      } catch (_) {}
 
-      // If not found in Supabase, try Google Books API (external)
+      // 2. Try Google Books
       if (!book) {
         try {
-          const gbResp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(userMessage)}&maxResults=1`);
-          if (gbResp.ok) {
-            const gbData = await gbResp.json();
-            const item = gbData.items?.[0];
-            if (item && item.volumeInfo) {
-              const vi = item.volumeInfo;
+          const resp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(userMessage)}&maxResults=1`);
+          if (resp.ok) {
+            const { items } = await resp.json();
+            const vi = items?.[0]?.volumeInfo;
+            if (vi) {
               book = {
                 title: vi.title || userMessage,
-                author: (vi.authors && vi.authors[0]) || 'Unknown',
-                description: vi.description || vi.subtitle || 'No description available.',
-                source: 'google_books',
+                author: vi.authors?.[0] || 'Unknown',
+                description: vi.description || vi.subtitle || 'No description.',
+                source: 'google',
               };
             }
           }
-        } catch (err) {
-          // ignore external lookup errors
-          book = null;
-        }
+        } catch (_) {}
       }
+
+      const prompt = book
+        ? `You are a friendly, knowledgeable librarian. User asked: "${userMessage}". Book: "${book.title}" by ${book.author}. Description: ${book.description}. Respond conversationally, avoid spoilers, highlight themes or fun facts. Keep it under 120 words.`
+        : `You are a helpful librarian. User asked: "${userMessage}". No book found. Suggest searching the library or Google Books. Be kind and encouraging.`;
 
       let responseText = '';
 
-      // Build a prompt including book details if available
-      const promptBase = book
-        ? `You are a friendly library assistant. The user asked: "${userMessage}". Book details: Title: ${book.title}, Author: ${book.author}, Description: ${book.description}\. Provide a concise, conversational response with key info (plot, themes, fun facts) and avoid spoilers.`
-        : `You are a friendly library assistant. The user asked: "${userMessage}". No book details are available. If you don't know, be honest and offer suggestions on where to find the book.`;
-
-      // Call Hugging Face with the prompt
+      // 3. Hugging Face
       try {
         const hfResp = await fetch(HUGGING_FACE_API_URL, {
           method: 'POST',
@@ -102,78 +117,281 @@ export default function ChatModal({ visible, onClose, userId }: Props) {
             Authorization: `Bearer ${HUGGING_FACE_API_TOKEN}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ inputs: promptBase, parameters: { max_new_tokens: 250, temperature: 0.7 } }),
+          body: JSON.stringify({
+            inputs: prompt,
+            parameters: { max_new_tokens: 180, temperature: 0.7, return_full_text: false },
+          }),
         });
 
         if (hfResp.ok) {
           const data = await hfResp.json();
-          if (typeof data === 'string') responseText = data;
-          else if (Array.isArray(data) && data[0]) responseText = data[0].generated_text || data[0].text || JSON.stringify(data[0]);
-          else if (data.generated_text) responseText = data.generated_text;
+          responseText = data[0]?.generated_text?.trim() || '';
         }
-      } catch (err) {
-        responseText = '';
-      }
+      } catch (_) {}
 
-      // If HF didn't return a usable answer, fallback to a local response using found book (if any)
-      if (!responseText) {
-        if (book) responseText = buildLocalResponse(book, userMessage) + (book.source === 'google_books' ? '\n\n(Details retrieved from Google Books)' : '');
-        else responseText = "I couldn't find that book in your library or external sources. Try a different title or add the book to your library.";
+      // 4. Fallback
+      if (!responseText && book) {
+        responseText = buildLocalResponse(book, userMessage);
+        if (book.source === 'google') responseText += '\n\n*(From Google Books)*';
+      } else if (!responseText) {
+        responseText = "I couldn't find that book. Try adding it to your library or searching by exact title!";
       }
 
       setChatHistory(prev => [...prev, { role: 'assistant', content: responseText }]);
     } catch (err: any) {
-      setChatHistory(prev => [...prev, { role: 'assistant', content: `Error: ${err?.message || 'Failed to fetch assistant response'}` }]);
+      setChatHistory(prev => [...prev, { role: 'assistant', content: `Error: ${err.message || 'Something went wrong.'}` }]);
     } finally {
       setChatLoading(false);
-      setChatInput('');
+      scrollToBottom();
     }
   };
 
-  const renderItem = ({ item }: { item: ChatMessage }) => (
-    <View style={[styles.chatMessage, item.role === 'user' ? styles.userMessage : styles.assistantMessage]}>
-      <Text style={styles.chatText}>{item.content}</Text>
+  const clearInput = () => {
+    setChatInput('');
+    inputRef.current?.focus();
+  };
+
+  const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => (
+    <View
+      style={[
+        styles.messageWrapper,
+        item.role === 'user' ? styles.userWrapper : styles.assistantWrapper,
+      ]}
+    >
+      {item.role === 'assistant' && (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>AI</Text>
+        </View>
+      )}
+      <View
+        style={[
+          styles.messageBubble,
+          item.role === 'user' ? styles.userBubble : styles.assistantBubble,
+        ]}
+      >
+        <Text style={styles.messageText}>{item.content}</Text>
+      </View>
     </View>
   );
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-        <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>AI Book Chat</Text>
-          <FlatList data={chatHistory} renderItem={renderItem} keyExtractor={(item, idx) => `${item.role}-${idx}`} style={styles.chatList} />
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <SafeAreaView style={styles.overlay}>
+        <LinearGradient colors={['#2a0845', '#0f002b']} style={StyleSheet.absoluteFillObject} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalContainer}>
+            {/* Header */}
+            <Animated.View entering={FadeInDown.duration(500)} style={styles.header}>
+              <Text style={styles.title}>AI Book Assistant</Text>
+              <Text style={styles.subtitle}>Ask about any book.</Text>
+            </Animated.View>
 
-          <View style={styles.chatInputContainer}>
-            <TextInput style={[styles.input, styles.chatInput]} placeholder="Ask about a book..." value={chatInput} onChangeText={setChatInput} editable={!chatLoading} />
-            <TouchableOpacity style={[styles.submitButton, chatLoading && styles.disabledButton]} onPress={handleSend} disabled={chatLoading}>
-              {chatLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>Send</Text>}
+            {/* Chat Area */}
+            <FlatList
+              ref={flatListRef}
+              data={chatHistory}
+              renderItem={renderMessage}
+              keyExtractor={(_, i) => `msg-${i}`}
+              contentContainerStyle={styles.chatList}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <Animated.View entering={FadeIn.duration(600)} style={styles.empty}>
+                  <Text style={styles.emptyText}>Ask me about a book!</Text>
+                </Animated.View>
+              }
+            />
+
+            {/* Loading Skeleton */}
+            {chatLoading && (
+              <Animated.View entering={FadeIn} style={styles.loadingBubble}>
+                <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFillObject} />
+                <Animated.View>
+                  <ActivityIndicator size="small" color="#8b5cf6" />
+                </Animated.View>
+                <Text style={styles.thinking}>Thinking...</Text>
+              </Animated.View>
+            )}
+
+            {/* Input */}
+            <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.inputContainer}>
+              <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFillObject} />
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  ref={inputRef}
+                  style={styles.input}
+                  placeholder="Ask about a book..."
+                  placeholderTextColor="#aaa"
+                  value={chatInput}
+                  onChangeText={setChatInput}
+                  onSubmitEditing={handleSend}
+                  returnKeyType="send"
+                  editable={!chatLoading}
+                  autoFocus
+                />
+                {chatInput.length > 0 && (
+                  <TouchableOpacity style={styles.clearBtn} onPress={clearInput}>
+                    <Text style={styles.clearText}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.sendBtn, chatLoading && styles.sendBtnDisabled]}
+                onPress={handleSend}
+                disabled={chatLoading || !validateInput(chatInput)}
+              >
+                {chatLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.sendText}>Send</Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Close */}
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={chatLoading}>
+              <Text style={styles.closeText}>Close Chat</Text>
             </TouchableOpacity>
           </View>
-
-          <TouchableOpacity style={[styles.cancelButton, { marginTop: 8 }]} onPress={onClose} disabled={chatLoading}>
-            <Text style={styles.actionButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
 
+// ──────────────────────────────────────────────────────────────
+// Styles – Magnificent & Modern
+// ──────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, width: '100%', maxWidth: 600, maxHeight: '90%' },
-  modalTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 8 },
-  chatList: { flexGrow: 0, maxHeight: '70%', marginBottom: 8 },
-  chatMessage: { padding: 8, borderRadius: 8, marginBottom: 6, maxWidth: '85%' },
-  userMessage: { backgroundColor: '#6366f1', alignSelf: 'flex-end' },
-  assistantMessage: { backgroundColor: '#e5e7eb', alignSelf: 'flex-start' },
-  chatText: { color: '#333' },
-  chatInputContainer: { flexDirection: 'row', alignItems: 'center' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 12, padding: 10, backgroundColor: '#f9f9f9' },
-  chatInput: { flex: 1, marginRight: 8 },
-  submitButton: { backgroundColor: '#6366f1', borderRadius: 12, padding: 10, alignItems: 'center' },
-  submitButtonText: { color: '#fff' },
-  disabledButton: { backgroundColor: '#a5b4fc' },
-  cancelButton: { backgroundColor: '#6b7280', borderRadius: 12, padding: 12, alignItems: 'center' },
-  actionButtonText: { color: '#fff', fontWeight: '600' },
+  overlay: { flex: 1 },
+  modalContainer: {
+    flex: 1,
+    margin: 16,
+    backgroundColor: 'rgba(26, 0, 51, 0.95)',
+    borderRadius: 24,
+    overflow: 'hidden',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+  },
+
+  // Header
+  header: { padding: 20, paddingBottom: 12 },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#e0d0ff',
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#c0a9ff',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+
+  // Chat
+  chatList: { paddingHorizontal: 16, paddingTop: 8, flexGrow: 1 },
+  messageWrapper: { flexDirection: 'row', marginVertical: 6, alignItems: 'flex-end' },
+  userWrapper: { justifyContent: 'flex-end' },
+  assistantWrapper: { justifyContent: 'flex-start' },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#8b5cf6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  avatarText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  messageBubble: {
+    maxWidth: '78%',
+    padding: 12,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  userBubble: {
+    backgroundColor: '#8b5cf6',
+    borderBottomRightRadius: 4,
+  },
+  assistantBubble: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderBottomLeftRadius: 4,
+  },
+  messageText: {
+    color: '#fff',
+    fontSize: 15,
+    lineHeight: 20,
+  },
+
+  // Loading
+  loadingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  thinking: { color: '#a78bfa', marginLeft: 8, fontStyle: 'italic' },
+
+  // Input
+  inputContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#fff',
+  },
+  clearBtn: {
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+  },
+  clearText: { color: '#ccc', fontSize: 20, fontWeight: '600' },
+  sendBtn: {
+    backgroundColor: '#8b5cf6',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    justifyContent: 'center',
+  },
+  sendBtnDisabled: { backgroundColor: '#6366f1' },
+  sendText: { color: '#fff', fontWeight: '600' },
+
+  // Close
+  closeBtn: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: '#ef4444',
+    paddingVertical: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  closeText: { color: '#fff', fontWeight: '600' },
+
+  // Empty
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
+  emptyText: { fontSize: 16, color: '#a78bfa', fontStyle: 'italic' },
 });
