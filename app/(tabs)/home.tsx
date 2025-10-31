@@ -64,6 +64,7 @@ export default function HomeScreen() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [loading, setLoading] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -137,6 +138,12 @@ export default function HomeScreen() {
     { key: 'want to read', value: 'Want to Read' },
     { key: 'reading', value: 'Currently Reading' },
     { key: 'already read', value: 'Already Read' },
+    {key: 'favorite', value: 'Favorite' },
+  ];
+
+  const statusFilterOptions = [
+    { key: 'all', value: 'All Statuses' },
+    ...statusOptions,
   ];
 
   const openChatModal = () => setChatModalVisible(true);
@@ -340,7 +347,8 @@ export default function HomeScreen() {
 
   const filteredBooks = books.filter(book =>
     book.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-    (filterCategoryId === 'all' || book.category_id === filterCategoryId)
+    (filterCategoryId === 'all' || book.category_id === filterCategoryId) &&
+    (filterStatus === 'all' || (book.status ?? 'want to read') === filterStatus)
   );
 
   const renderStars = (bookId: string) => {
@@ -398,17 +406,31 @@ export default function HomeScreen() {
         ) : null}
       </View>
 
-      <View style={styles.filterBar}>
-        <SelectList
-          setSelected={setFilterCategoryId}
-          data={categoryOptions}
-          placeholder="All Categories"
-          search={false}
-          boxStyles={styles.filterBox}
-          inputStyles={styles.filterText}
-          dropdownStyles={styles.dropdown}
-          defaultOption={{ key: 'all', value: 'All Categories' }}
-        />
+      <View style={[styles.filterBar, { flexDirection: 'row', gap: 12 }] }>
+        <View style={{ flex: 1 }}>
+          <SelectList
+            setSelected={setFilterCategoryId}
+            data={categoryOptions}
+            placeholder="All Categories"
+            search={false}
+            boxStyles={styles.filterBox}
+            inputStyles={styles.filterText}
+            dropdownStyles={styles.dropdown}
+            defaultOption={{ key: 'all', value: 'All Categories' }}
+          />
+        </View>
+        <View style={{ width: 150 }}>
+          <SelectList
+            setSelected={setFilterStatus}
+            data={statusFilterOptions}
+            placeholder="Status"
+            search={false}
+            boxStyles={{ backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 0, borderRadius: 16, paddingHorizontal: 12, justifyContent: 'center' }}
+            inputStyles={styles.filterText}
+            dropdownStyles={styles.dropdown}
+            defaultOption={{ key: 'all', value: 'All Statuses' }}
+          />
+        </View>
       </View>
 
       <View style={styles.actionRow}>

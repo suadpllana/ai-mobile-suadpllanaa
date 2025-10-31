@@ -237,27 +237,7 @@ export default function BookCard({
           />
 
           {/* Favorite Heart */}
-          <TouchableOpacity
-            style={styles.favButton}
-            onPress={toggleFavorite}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-              {isFav ? (
-                <AntDesign
-                  name="heart"
-                  size={22}
-                  color="#ef4444"
-                />
-              ) : (
-                <AntDesign
-                  name="heart"
-                  size={22}
-                  color="#9ca3af"
-                />
-              )}
-            </Animated.View>
-          </TouchableOpacity>
+      
         </View>
 
         {/* Content */}
