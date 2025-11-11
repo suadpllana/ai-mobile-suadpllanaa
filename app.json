@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MyProjectName",
-    "slug": "MyProjectName",
+    "name": "Books Club",
+    "slug": "Books Club",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

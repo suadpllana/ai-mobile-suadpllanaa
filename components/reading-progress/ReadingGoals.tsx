@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -13,9 +13,10 @@ import {
 import { supabase } from "../../supabase";
 import { ThemedText } from "../themed-text";
 
-
-export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }) {
-    const [goals, setGoals] = useState<{
+export function ReadingGoals({
+  onPagesUpdated,
+}: { onPagesUpdated?: () => void }) {
+  const [goals, setGoals] = useState<{
     dailyPages: number;
     completedToday: number;
     streak: number;
@@ -24,11 +25,14 @@ export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }
     completedToday: 0,
     streak: 0,
   });
+
   const [pagesModal, setPagesModal] = useState(false);
   const [pagesInput, setPagesInput] = useState("");
   const notifIdRef = useRef<string | null>(null);
-  const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
 
+  // ──────────────────────────────────────────────────────────────
+  // Notification setup
+  // ──────────────────────────────────────────────────────────────
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -41,97 +45,96 @@ export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }
     fetchGoals();
   }, []);
 
+  // Request permission once
   useEffect(() => {
     (async () => {
-      try {
-        if (!Device.isDevice) {
-          console.log('Notifications require a physical device');
-          return;
-        }
+      if (!Device.isDevice) return;
 
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-
-        if (finalStatus !== 'granted') {
-          Alert.alert('Permission required', 'Enable notifications to receive goal reminders.');
-        }
-        setPermissionStatus(finalStatus ?? 'unknown');
-      } catch (err) {
-        console.warn('Notification permission error', err);
+      const { status: existing } = await Notifications.getPermissionsAsync();
+      let final = existing;
+      if (existing !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        final = status;
+      }
+      if (final !== "granted") {
+        Alert.alert(
+          "Permission required",
+          "Enable notifications to get daily goal reminders."
+        );
       }
     })();
   }, []);
 
+  // Schedule / cancel daily reminder (8 PM)
   useEffect(() => {
     let mounted = true;
 
-    const manageNotifications = async () => {
-      try {
-        if (!Device.isDevice) return;
+    const manage = async () => {
+      if (!Device.isDevice) return;
 
-        const shouldNotify = (goals.completedToday || 0) < (goals.dailyPages || 30);
+      const needsReminder =
+        (goals.completedToday || 0) < (goals.dailyPages || 30);
 
-        if (shouldNotify) {
-          if (!notifIdRef.current) {
-            const id = await Notifications.scheduleNotificationAsync({
-              content: {
-                title: 'Reading goal not met',
-                body: `You haven't reached ${goals.dailyPages} pages today.`,
-                sound: true,
-              },
-              trigger: { hours: 20, minutes: 0, repeats: true },
-            });
-            if (mounted) notifIdRef.current = id;
-          }
-        } else {
-          if (notifIdRef.current) {
-            await Notifications.cancelScheduledNotificationAsync(notifIdRef.current);
-            notifIdRef.current = null;
-          }
+      if (needsReminder) {
+        if (!notifIdRef.current) {
+          const id = await Notifications.scheduleNotificationAsync({
+            content: {
+              title: "Reading goal not met",
+              body: `You haven't reached ${goals.dailyPages} pages today.`,
+              sound: true,
+            },
+            trigger: { hour: 20, minute: 0, repeats: true },
+          });
+          if (mounted) notifIdRef.current = id;
         }
-      } catch (err) {
-        console.warn('Notification scheduling error', err);
+      } else if (notifIdRef.current) {
+        await Notifications.cancelScheduledNotificationAsync(
+          notifIdRef.current
+        );
+        notifIdRef.current = null;
       }
     };
 
-    manageNotifications();
-
+    manage();
     return () => {
       mounted = false;
     };
   }, [goals.completedToday, goals.dailyPages]);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (notifIdRef.current) {
-        Notifications.cancelScheduledNotificationAsync(notifIdRef.current).catch(() => {});
-        notifIdRef.current = null;
+        Notifications.cancelScheduledNotificationAsync(
+          notifIdRef.current
+        ).catch(() => {});
       }
     };
   }, []);
 
- 
-
- 
-
+  // ──────────────────────────────────────────────────────────────
+  // Fetch current goal + today pages
+  // ──────────────────────────────────────────────────────────────
   async function fetchGoals() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
 
+      // 1. User settings
       const { data: progress } = await supabase
         .from("reading_progress")
-        .select("daily_goal, manual_pages_today")
+        .select(
+          "daily_goal, manual_pages_today, streak, pages_day1,pages_day2,pages_day3,pages_day4,pages_day5,pages_day6,pages_day7"
+        )
         .eq("id", user.id)
         .maybeSingle();
 
-      const savedDailyGoal = progress?.daily_goal || 30;
-      const manualToday = progress?.manual_pages_today || 0;
+      const savedGoal = progress?.daily_goal ?? 30;
+      const manualToday = progress?.manual_pages_today ?? 0;
 
+      // 2. Auto-tracked sessions for today
       const today = new Date().toISOString().split("T")[0];
       const { data: sessions } = await supabase
         .from("reading_sessions")
@@ -139,88 +142,109 @@ export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }
         .gte("created_at", `${today}T00:00:00`)
         .lte("created_at", `${today}T23:59:59`);
 
-      const autoPagesToday = sessions?.reduce((acc, s) => acc + (s.pages_read || 0), 0) || 0;
-      const finalPagesToday = manualToday > 0 ? manualToday : autoPagesToday;
+      const autoToday =
+        sessions?.reduce((a, s) => a + (s.pages_read ?? 0), 0) ?? 0;
+      const todayPages = manualToday > 0 ? manualToday : autoToday;
 
       setGoals({
-        dailyPages: savedDailyGoal,
-        completedToday: finalPagesToday,
-        streak: goals.streak,
+        dailyPages: savedGoal,
+        completedToday: todayPages,
+        streak: progress?.streak ?? 0,
       });
-    } catch (error) {
-      console.error("Error fetching goals:", error);
+    } catch (e) {
+      console.error("fetchGoals error:", e);
     }
   }
 
+  // ──────────────────────────────────────────────────────────────
+  // Save manual pages
+  // ──────────────────────────────────────────────────────────────
   async function savePagesReadToday() {
-    const pages = parseInt(pagesInput);
+    const pages = parseInt(pagesInput, 10);
     if (isNaN(pages) || pages < 0 || pages > 1000) {
-      Alert.alert("Invalid input", "Enter 0–1000");
+      Alert.alert("Invalid input", "Enter a number between 0 and 1000");
       return;
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
+
+      // ---- Load current row (if any) ----
       const { data: existing } = await supabase
-        .from('reading_progress')
-        .select('pages_day1,pages_day2,pages_day3,pages_day4,pages_day5,pages_day6,pages_day7,manual_pages_today,daily_goal,streak,updated_at')
-        .eq('id', user.id)
+        .from("reading_progress")
+        .select(
+          "pages_day1, manual_pages, pages_day2,pages_day3,pages_day4,pages_day5,pages_day6,pages_day7,streak,daily_goal,updated_at"
+        )
+        .eq("id", user.id)
         .maybeSingle();
 
       const today = new Date();
-      const todayStr = today.toISOString().slice(0,10);
-      const lastUpdatedStr = existing?.updated_at ? new Date(existing.updated_at).toISOString().slice(0,10) : null;
+      const todayStr = today.toISOString().slice(0, 10);
+      const lastUpdatedStr = existing?.updated_at
+        ? new Date(existing.updated_at).toISOString().slice(0, 10)
+        : null;
 
+      // ---- Build 7-day array ----
       const oldDays = [
-        existing?.pages_day1 || 0,
-        existing?.pages_day2 || 0,
-        existing?.pages_day3 || 0,
-        existing?.pages_day4 || 0,
-        existing?.pages_day5 || 0,
-        existing?.pages_day6 || 0,
-        existing?.pages_day7 || 0,
+        existing?.pages_day1 ?? 0,
+        existing?.pages_day2 ?? 0,
+        existing?.pages_day3 ?? 0,
+        existing?.pages_day4 ?? 0,
+        existing?.pages_day5 ?? 0,
+        existing?.pages_day6 ?? 0,
+        existing?.pages_day7 ?? 0,
       ];
 
       let newDays = [...oldDays];
-      let newStreak = existing?.streak || 0;
+      let newStreak = existing?.streak ?? 0;
 
       if (lastUpdatedStr && lastUpdatedStr !== todayStr) {
-        const lastDate = new Date(lastUpdatedStr + 'T00:00:00');
-        const diffMs = today.getTime() - lastDate.getTime();
-        const diffDays = Math.floor(diffMs / (1000*60*60*24));
+        // Roll days forward
+        const lastDate = new Date(lastUpdatedStr + "T00:00:00");
+        const diffDays = Math.floor(
+          (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
 
         if (diffDays >= 7) {
-          newDays = [0,0,0,0,0,0, pages];
+          newDays = [0, 0, 0, 0, 0, 0, pages];
         } else {
-          for (let i = 0; i <= 6 - diffDays; i++) {
+          // Shift left
+          for (let i = 0; i < 7 - diffDays; i++) {
             newDays[i] = oldDays[i + diffDays];
           }
-          for (let i = 7 - diffDays; i <= 5; i++) {
+          for (let i = 7 - diffDays; i < 7; i++) {
             newDays[i] = 0;
           }
           newDays[6] = pages;
         }
 
-        const prevStreak = existing?.streak || 0;
-        const goal = existing?.daily_goal || goals.dailyPages || 30;
+        // Streak logic
+        const goal = existing?.daily_goal ?? goals.dailyPages ?? 30;
         if (pages >= goal) {
-          if (diffDays === 1) newStreak = prevStreak + 1;
-          else newStreak = 1;
+          newStreak = diffDays === 1 ? (existing?.streak ?? 0) + 1 : 1;
         } else {
           newStreak = 0;
         }
       } else {
+        // Same day → just overwrite today
         newDays[6] = pages;
-        const goal = existing?.daily_goal || goals.dailyPages || 30;
+        const goal = existing?.daily_goal ?? goals.dailyPages ?? 30;
         if (pages >= goal) {
-          newStreak = existing?.streak || 0;
+          newStreak = existing?.streak ?? 0; // keep current streak
+        } else {
+          newStreak = 0;
         }
       }
 
-      const payload: any = {
+      // ---- Payload ----
+      const payload = {
         id: user.id,
-        user_id: user.id,
+        daily_goal: goals.dailyPages,
+        manual_pages_today: pages,
+        streak: newStreak,
         pages_day1: newDays[0],
         pages_day2: newDays[1],
         pages_day3: newDays[2],
@@ -228,45 +252,69 @@ export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }
         pages_day5: newDays[4],
         pages_day6: newDays[5],
         pages_day7: newDays[6],
-        manual_pages_today: pages,
-        daily_goal: goals.dailyPages,
-        streak: newStreak,
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase.from('reading_progress').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
+      // ---- Upsert (safe insert-or-update) ----
+      let { error } = await supabase
+        .from("reading_progress")
+        .upsert(payload, { onConflict: "id" });
 
-      setGoals(prev => ({ ...prev, completedToday: pages, streak: newStreak }));
+      // Fallback if `streak` column is missing
+      if (error && error.message.toLowerCase().includes("streak")) {
+        console.warn("streak column missing – retrying without it");
+        const { streak, ...noStreak } = payload;
+        const { error: e2 } = await supabase
+          .from("reading_progress")
+          .upsert(noStreak, { onConflict: "id" });
+        if (e2) throw e2;
+      } else if (error) {
+        throw error;
+      }
+
+      // ---- Success UI ----
+      setGoals((prev) => ({
+        ...prev,
+        completedToday: pages,
+        streak: newStreak,
+      }));
       setPagesModal(false);
       setPagesInput("");
-
       Alert.alert("Success!", `${pages} pages logged`);
-      onPagesUpdated && onPagesUpdated();
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Save failed");
+      onPagesUpdated?.();
+    } catch (err: any) {
+      console.error("savePagesReadToday error:", err);
+      Alert.alert("Error", err.message ?? "Failed to save");
     }
   }
 
-  const progress = Math.min((goals.completedToday / goals.dailyPages) * 100, 100);
+  const progress = Math.min(
+    (goals.completedToday / goals.dailyPages) * 100,
+    100
+  );
 
+  // ──────────────────────────────────────────────────────────────
+  // Render
+  // ──────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <ThemedText style={styles.title}>Today's Reading</ThemedText>
-        <TouchableOpacity onPress={() => {
-          setPagesInput(goals.completedToday.toString());
-          setPagesModal(true);
-        }}>
+        <TouchableOpacity
+          onPress={() => {
+            setPagesInput(goals.completedToday.toString());
+            setPagesModal(true);
+          }}
+        >
           <Ionicons name="pencil" size={20} color="#8b5cf6" />
         </TouchableOpacity>
       </View>
 
-   
-
       <View style={styles.goalCard}>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
+          <View
+            style={[styles.progressFill, { width: `${progress}%` }]}
+          />
         </View>
 
         <View style={styles.goalStats}>
@@ -279,12 +327,15 @@ export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }
 
           <View style={styles.streakContainer}>
             <Ionicons name="flame" size={20} color="#f59e0b" />
-            <ThemedText style={styles.streakText}>{goals.streak}</ThemedText>
+            <ThemedText style={styles.streakText}>
+              {goals.streak}
+            </ThemedText>
             <ThemedText style={styles.label}>day streak</ThemedText>
           </View>
         </View>
       </View>
 
+      {/* ---------- Modal ---------- */}
       <Modal visible={pagesModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -312,7 +363,10 @@ export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }
                 <ThemedText style={styles.cancelText}>Cancel</ThemedText>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={savePagesReadToday} style={styles.saveButton}>
+              <TouchableOpacity
+                onPress={savePagesReadToday}
+                style={styles.saveButton}
+              >
                 <ThemedText style={styles.saveText}>Save</ThemedText>
               </TouchableOpacity>
             </View>
@@ -323,20 +377,16 @@ export function ReadingGoals({ onPagesUpdated }: { onPagesUpdated?: () => void }
   );
 }
 
+/* ────────────────────────── Styles ────────────────────────── */
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-  },
+  container: { padding: 16 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
+  title: { fontSize: 18, fontWeight: "600" },
   goalCard: {
     backgroundColor: "rgba(139, 92, 246, 0.1)",
     borderRadius: 16,
@@ -359,23 +409,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-end",
   },
-  pagesText: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 4,
-  },
-  label: {
-    fontSize: 14,
-    opacity: 0.7,
-  },
-  streakContainer: {
-    alignItems: "center",
-  },
-  streakText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginVertical: 2,
-  },
+  pagesText: { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
+  label: { fontSize: 14, opacity: 0.7 },
+  streakContainer: { alignItems: "center" },
+  streakText: { fontSize: 18, fontWeight: "bold", marginVertical: 2 },
 
   modalOverlay: {
     flex: 1,
@@ -410,10 +447,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
+  modalButtons: { flexDirection: "row", justifyContent: "space-between" },
   cancelButton: {
     flex: 1,
     padding: 12,
@@ -422,11 +456,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
   },
-  cancelText: {
-    textAlign: "center",
-    color: "#666",
-    fontWeight: "600",
-  },
+  cancelText: { textAlign: "center", color: "#666", fontWeight: "600" },
   saveButton: {
     flex: 1,
     padding: 12,
@@ -434,23 +464,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#8b5cf6",
     borderRadius: 8,
   },
-  saveText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "600",
-  },
-  debugContainer: {
-    marginTop: 12,
-    padding: 8,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)'
-  },
-  debugStatus: {
-    fontSize: 13,
-    color: '#e6e6e6',
-    marginBottom: 8,
-  },
-  debugRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  debugButton: { flex: 1, padding: 10, backgroundColor: '#6b21a8', marginHorizontal: 6, borderRadius: 8, alignItems: 'center' },
-  debugButtonText: { color: '#fff', fontWeight: '600' },
+  saveText: { color: "white", textAlign: "center", fontWeight: "600" },
 });

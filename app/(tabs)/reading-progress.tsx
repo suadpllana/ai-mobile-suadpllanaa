@@ -30,12 +30,6 @@ export default function ReadingProgressScreen() {
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState<{ text: string; author:  string } | null>(null);
 
-  const [readingStats, setReadingStats] = useState({
-    totalBooks: 0,
-    booksInProgress: 0,
-    averageProgress: 0,
-    totalPagesRead: 0,
-  });
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -50,7 +44,6 @@ export default function ReadingProgressScreen() {
     location: string;
     created_at: string;
   };
-  const [readingSessions, setReadingSessions] = useState<Session[]>([]);
   const [progressData, setProgressData] = useState<{
     labels: string[];
     datasets: { data: number[] }[];
@@ -230,25 +223,7 @@ async function fetchReadingProgress() {
 
   <ProgressStats refreshTrigger={refreshKey} />
 
-        <View style={styles.chartContainer}>
-          <ThemedText style={styles.chartTitle}>Pages Read Last 7 Days</ThemedText>
-         <LineChart
-  data={progressData}
-  width={width - 32}
-  height={240}
-  chartConfig={{
-    backgroundColor: "#8b5cf6",
-    backgroundGradientFrom: "#8b5cf6",
-    backgroundGradientTo: "#a78bfa",
-    decimalPlaces: 0,
-    color: () => `rgba(255, 255, 255, 1)`,
-    labelColor: () => `rgba(255, 255, 255, 0.8)`,
-    propsForDots: { r: "6", strokeWidth: "3", stroke: "#ddd" },
-  }}
-  bezier
-  style={{ marginVertical: 16, borderRadius: 16 }}
-/>
-        </View>
+      
 
         <ReadingGoals onPagesUpdated={handlePagesUpdated} />
 

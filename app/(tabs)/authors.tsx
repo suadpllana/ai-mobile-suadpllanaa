@@ -1,7 +1,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { ThemedText } from '../../components/themed-text';
 import { ThemedView } from '../../components/themed-view';
@@ -94,18 +94,137 @@ const TOP_AUTHORS = [
 ];
 
 
-const TOP_AUTHORS_GENRE_MAP: Record<string, string> = {
-  'Rumi': 'Religion',
-  'Lao Tzu': 'Religion',
-  'Confucius': 'Religion',
+// Ensure every author from TOP_AUTHORS is present in the genre map.
+// Default to 'General' and then apply specific overrides below.
+const TOP_AUTHORS_GENRE_MAP: Record<string, string> = TOP_AUTHORS.reduce((acc, name) => {
+  acc[name] = 'General';
+  return acc;
+}, {} as Record<string, string>);
+
+// Specific genre overrides for known authors (keeps mapping readable)
+const GENRE_OVERRIDES: Record<string, string> = {
+  'Rumi': 'Poetry',
+  'Lao Tzu': 'Philosophy',
+  'Confucius': 'Philosophy',
   'Marcus Aurelius': 'Philosophy',
-  'Kahlil Gibran': 'Religion',
+  'Kahlil Gibran': 'Poetry',
   'Paulo Coelho': 'Spiritual',
-  'C.S. Lewis': 'Religion',
+  'C.S. Lewis': 'Fantasy',
   'Sun Tzu': 'Philosophy',
   'Machiavelli': 'Philosophy',
-  
+  'Stephen King': 'Horror',
+  'J.K. Rowling': 'Fantasy',
+  'Agatha Christie': 'Mystery',
+  'James Patterson': 'Thriller',
+  'John Grisham': 'Legal Thriller',
+  'Dan Brown': 'Thriller',
+  'George R.R. Martin': 'Fantasy',
+  'J.R.R. Tolkien': 'Fantasy',
+  'Haruki Murakami': 'Literary Fiction',
+  'Margaret Atwood': 'Literary Fiction',
+  'Neil Gaiman': 'Fantasy',
+  'Isabel Allende': 'Magical Realism',
+  'Ernest Hemingway': 'Classics',
+  'Jane Austen': 'Classics',
+  'Mark Twain': 'Classics',
+  'Charles Dickens': 'Classics',
+  'F. Scott Fitzgerald': 'Classics',
+  'Leo Tolstoy': 'Classics',
+  'Gabriel Garcia Marquez': 'Magical Realism',
+  'Toni Morrison': 'Literary Fiction',
+  'Salman Rushdie': 'Literary Fiction',
+  'Kazuo Ishiguro': 'Literary Fiction',
+  'Zadie Smith': 'Literary Fiction',
+  'Chimamanda Ngozi Adichie': 'Literary Fiction',
+  'Ian McEwan': 'Literary Fiction',
+  'Alice Munro': 'Short Stories',
+  'Philip Roth': 'Literary Fiction',
+  'Doris Kearns Goodwin': 'History',
+  'Ron Chernow': 'Biography',
+  'David McCullough': 'History',
+  'Erik Larson': 'History',
+  'Walter Isaacson': 'Biography',
+  'Isaac Asimov': 'Science Fiction',
+  'Arthur C. Clarke': 'Science Fiction',
+  'Philip K. Dick': 'Science Fiction',
+  'Frank Herbert': 'Science Fiction',
+  'Ursula K. Le Guin': 'Science Fiction',
+  'Ray Bradbury': 'Science Fiction',
+  'Jared Diamond': 'Non-fiction',
+  'Richard Dawkins': 'Science',
+  'Carl Sagan': 'Science',
+  'Stephen Hawking': 'Science',
+  'Yuval Noah Harari': 'History',
+  'Michelle Obama': 'Memoir',
+  'Malcolm Gladwell': 'Non-fiction',
+  'James Clear': 'Self-help',
+  'Brené Brown': 'Self-help',
+  'Fyodor Dostoevsky': 'Classics',
+  'Franz Kafka': 'Classics',
+  'Homer': 'Classics',
+  'Dante Alighieri': 'Classics',
+  'Chinua Achebe': 'Literary Fiction',
+  'John Green': 'Young Adult',
+  'Rainbow Rowell': 'Young Adult',
+  'Cassandra Clare': 'Young Adult',
+  'Octavia E. Butler': 'Science Fiction',
+  'Nora Roberts': 'Romance',
+  'Danielle Steel': 'Romance',
+  'Julia Quinn': 'Romance',
+  'Tessa Dare': 'Romance',
+  'Sarah J. Maas': 'Fantasy',
+  'Gillian Flynn': 'Thriller',
+  'Tana French': 'Mystery',
+  'Stieg Larsson': 'Mystery',
+  'Harlan Coben': 'Mystery',
+  'Louise Penny': 'Mystery',
+  'Donna Tartt': 'Literary Fiction',
+  'Colson Whitehead': 'Literary Fiction',
+  'Jhumpa Lahiri': 'Literary Fiction',
+  'Arundhati Roy': 'Literary Fiction',
+  'Elena Ferrante': 'Literary Fiction',
+  'Umberto Eco': 'Literary Fiction',
+  'Milan Kundera': 'Literary Fiction',
+  'Mario Vargas Llosa': 'Literary Fiction',
+  'Brandon Sanderson': 'Fantasy',
+  'Patrick Rothfuss': 'Fantasy',
+  'N.K. Jemisin': 'Fantasy',
+  'Liu Cixin': 'Science Fiction',
+  'Ted Chiang': 'Science Fiction',
+  'Harper Lee': 'Classics',
+  'J.D. Salinger': 'Classics',
+  'Rupi Kaur': 'Poetry',
+  'Maya Angelou': 'Poetry',
+  'William Shakespeare': 'Classics',
+  'T.S. Eliot': 'Poetry',
+  'Sylvia Plath': 'Poetry',
+  'Langston Hughes': 'Poetry',
+  'Pablo Neruda': 'Poetry',
+  'Rainer Maria Rilke': 'Poetry',
+  'Robert Kiyosaki': 'Business',
+  'Napoleon Hill': 'Self-help',
+  'Simon Sinek': 'Business',
+  'Adam Grant': 'Business',
+  'Cal Newport': 'Self-help',
+  'Douglas Adams': 'Science Fiction',
+  'Kurt Vonnegut': 'Literary Fiction',
+  'William Gibson': 'Science Fiction',
+  'Cormac McCarthy': 'Literary Fiction',
+  'Alice Walker': 'Literary Fiction',
+  'James Baldwin': 'Literary Fiction',
+  'Edward Said': 'Non-fiction',
+  'Noam Chomsky': 'Non-fiction',
+  'Ta-Nehisi Coates': 'Non-fiction',
+  'Ibram X. Kendi': 'Non-fiction',
+  'Rebecca Solnit': 'Non-fiction',
+  'Andy Weir': 'Science Fiction',
+  'Blake Crouch': 'Science Fiction',
+  'Hugh Howey': 'Science Fiction',
+  'Emily St. John Mandel': 'Contemporary',
+  'Ayn Rand': 'Philosophy',
 };
+
+Object.assign(TOP_AUTHORS_GENRE_MAP, GENRE_OVERRIDES);
 
 type AuthorItem = { name: string; genre: string };
 const AUTHORS_LIST: AuthorItem[] = TOP_AUTHORS.map(name => ({ name, genre: TOP_AUTHORS_GENRE_MAP[name] || 'General' }));
@@ -141,6 +260,7 @@ export default function AuthorsScreen() {
 
   const totalAuthorPages = Math.max(1, Math.ceil(filteredAuthors.length / AUTHORS_PER_PAGE));
   const paginatedAuthors = filteredAuthors.slice(authorPage * AUTHORS_PER_PAGE, (authorPage + 1) * AUTHORS_PER_PAGE);
+  const genres = ['All', ...Array.from(new Set(AUTHORS_LIST.map(a => a.genre))).sort()];
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -242,20 +362,20 @@ export default function AuthorsScreen() {
             returnKeyType="search"
           />
 
-          <View style={{ flexDirection: 'row', marginBottom: 8, flexWrap: 'wrap' }}>
-            {['All', ...Array.from(new Set(AUTHORS_LIST.map(a => a.genre)))].map(g => (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.genreScroll}>
+            {genres.map(g => (
               <TouchableOpacity
                 key={g}
                 onPress={() => { setSelectedGenre(g); setAuthorPage(0); }}
                 style={[
-                  { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, marginRight: 8, marginBottom: 6 },
-                  selectedGenre === g ? { backgroundColor: tintColor } : { backgroundColor: cardBg }
+                  styles.genreChip,
+                  selectedGenre === g ? { backgroundColor: tintColor, borderColor: tintColor } : { backgroundColor: cardBg, borderColor: 'transparent' }
                 ]}
               >
-                <ThemedText style={{ color: selectedGenre === g ? '#fff' : textColor }}>{g}</ThemedText>
+                <ThemedText style={[styles.genreChipText, { color: selectedGenre === g ? 'black' : textColor }]}>{g}</ThemedText>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
 
           <FlatList
             data={paginatedAuthors}
@@ -390,6 +510,9 @@ const styles = StyleSheet.create({
   pagerText: { fontSize: 14, fontWeight: '700' },
   pagerInfo: { fontSize: 14 },
   searchInput: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 16, marginBottom: 10 },
+  genreScroll: { paddingVertical: 6 , height: 42 },
+  genreChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 18, marginRight: 8, borderWidth: 1, marginBottom: 6, height: 40, justifyContent: 'center', alignItems: 'center' },
+  genreChipText: { fontSize: 14, fontWeight: '600' },
 });
 
 
