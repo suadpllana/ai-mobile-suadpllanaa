@@ -2,6 +2,7 @@ import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,12 +11,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  DevSettings,
-  View,
+  View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
-import { useFocusEffect } from 'expo-router';
 
 type Props = {
   book: any;
@@ -218,6 +217,21 @@ export default function BookCard({
     }
   };
 
+  // Safely render stars: if the renderStars callback returns a string/number
+  // we must wrap it in a <Text> so we don't place raw text directly inside a <View>.
+  const renderStarsNode = (() => {
+    try {
+      const node = renderStars(book.id || book.title);
+      if (typeof node === 'string' || typeof node === 'number') {
+        return <Text style={styles.actionText}>{String(node)}</Text>;
+      }
+      return node;
+    } catch (err) {
+      // If renderStars throws or is undefined, don't break the UI.
+      return null;
+    }
+  })();
+
   return (
     <TouchableOpacity
       onPress={() => onPress?.(book)}
@@ -290,7 +304,7 @@ export default function BookCard({
           </View>
 
           <View style={styles.starsContainer}>
-            {renderStars(book.id || book.title)}
+            {renderStarsNode}
           </View>
 
           <View style={styles.actions}>
