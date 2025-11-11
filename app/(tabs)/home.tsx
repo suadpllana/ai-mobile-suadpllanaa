@@ -28,7 +28,6 @@ import BookCard from "../../components/BookCard";
 import BookModal from "../../components/BookModal";
 import ChatModal from "../../components/ChatModal";
 import { supabase } from "../../supabase";
-import { filter, sortBy } from "lodash";
 const { width } = Dimensions.get("window");
 type Book = {
   id: string;

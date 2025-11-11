@@ -115,6 +115,20 @@ export default function RecommendScreen() {
     if (!userId) return router.replace('/auth');
     setLoading(true);
     try {
+      // Check for duplicate by title and author
+      const { data: existing } = await supabase
+        .from('books')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('title', book.title)
+        .eq('author', book.author || 'Unknown')
+        .maybeSingle();
+      if (existing) {
+        Alert.alert('Duplicate', 'This book is already in your library.');
+        setLoading(false);
+        return;
+      }
+
       const payload: any = {
         title: book.title,
         author: book.author || 'Unknown',

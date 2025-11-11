@@ -24,11 +24,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import BookModal from '../../components/BookModal';
 import { supabase } from '../../supabase';
-import { set, add } from 'lodash';
 
 type Book = {
   id?: string;
-  title: string;
+  title?: string;
   author?: string;
   description?: string;
   user_id?: string;
@@ -60,6 +59,7 @@ export default function DiscoverScreen() {
 
   const [selectedBook, setSelectedBook] = useState<any | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [addingBookId, setAddingBookId] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -73,7 +73,6 @@ export default function DiscoverScreen() {
         }
         setUserId(session.user.id);
       } catch (err: any) {
-        console.warn(err);
       }
     };
     init();
@@ -87,8 +86,11 @@ export default function DiscoverScreen() {
   };
 
   const searchGoogleBooks = async () => {
+    // If the user is explicitly searching by text, clear any selected category
+    // to avoid conflicts between a category filter and a free-text query.
     if (selectedCategory) {
-      return fetchCategory(selectedCategory);
+      setSelectedCategory(null);
+      setCategoryQuery('');
     }
     if (!query.trim()) return;
     setHasSearched(true);
@@ -160,8 +162,29 @@ export default function DiscoverScreen() {
       router.replace('/auth');
       return;
     }
-    setLoading(true);
+    
+    // Prevent duplicate submissions by checking if already adding this book
+    const bookKey = `${book.title}-${book.author || 'Unknown'}`;
+    if (addingBookId === bookKey) {
+      return;
+    }
+    
+    setAddingBookId(bookKey);
     try {
+      // Check for duplicate by title and author
+      const { data: existing } = await supabase
+        .from('books')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('title', book.title)
+        .eq('author', book.author || 'Unknown')
+        .maybeSingle();
+      if (existing) {
+        Alert.alert('Duplicate', 'This book is already in your library.');
+        setAddingBookId(null);
+        return;
+      }
+
       const payload: any = {
         title: book.title,
         author: book.author || 'Unknown',
@@ -192,7 +215,6 @@ export default function DiscoverScreen() {
             payload.category_id = newCat?.id;
           }
         } catch (catErr) {
-          console.warn('Category error', catErr);
         }
       }
 
@@ -208,7 +230,6 @@ export default function DiscoverScreen() {
         .single();
 
       if (res.error) {
-        console.warn('Insert error, retrying minimal payload', res.error);
         const retry = await supabase
           .from('books')
           .insert([
@@ -240,7 +261,7 @@ export default function DiscoverScreen() {
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to add book');
     } finally {
-      setLoading(false);
+      setAddingBookId(null);
     }
   };
 
@@ -352,8 +373,13 @@ export default function DiscoverScreen() {
                     <TouchableOpacity
                       key="__all__"
                       onPress={() => {
+                        // Clear any category selection and also reset the text input
+                        // to avoid a conflicting dual search state.
                         setSelectedCategory(null);
                         setCategoryQuery('');
+                        setQuery('');
+                        setResults([]);
+                        setHasSearched(false);
                         setCategoryDropdownVisible(false);
                       }}
                       style={styles.dropdownItem}
@@ -368,13 +394,20 @@ export default function DiscoverScreen() {
                           key={cat}
                           onPress={() => {
                             if (isSelected) {
-                              setSelectedCategory(null);
-                              setCategoryQuery('');
-                              setCategoryDropdownVisible(false);
+                                // Deselecting a category: clear category state and the text input
+                                setSelectedCategory(null);
+                                setCategoryQuery('');
+                                setQuery('');
+                                setResults([]);
+                                setHasSearched(false);
+                                setCategoryDropdownVisible(false);
                             } else {
-                              setCategoryQuery(cat);
-                              setCategoryDropdownVisible(false);
-                              fetchCategory(cat);
+                                // Selecting a category should clear the text input to avoid
+                                // conflicting searches and then fetch the category results.
+                                setQuery('');
+                                setCategoryQuery(cat);
+                                setCategoryDropdownVisible(false);
+                                fetchCategory(cat);
                             }
                           }}
                           style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
@@ -447,13 +480,16 @@ export default function DiscoverScreen() {
                   </View>
 
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
-                   
-
                     <TouchableOpacity
-                      style={styles.addBtn}
+                      style={[styles.addBtn, addingBookId === `${item.title}-${item.author || 'Unknown'}` && styles.addBtnDisabled]}
                       onPress={() => addToLibrary(item)}
+                      disabled={addingBookId === `${item.title}-${item.author || 'Unknown'}`}
                     >
-                      <Text style={styles.addBtnText}>Add to Library</Text>
+                      {addingBookId === `${item.title}-${item.author || 'Unknown'}` ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <Text style={styles.addBtnText}>Add to Library</Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -586,6 +622,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  addBtnDisabled: {
+    backgroundColor: '#10b98166',
   },
   addBtnText: {
     color: '#fff',

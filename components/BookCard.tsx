@@ -25,7 +25,7 @@ type Props = {
   onPress?: (book: any) => void;
   imageUrl?: string | null;
   reloadPage?: boolean;
-  fetchFavorites: () => void;
+  fetchFavorites?: () => void;
   setRefreshPage?: (value: React.SetStateAction<boolean>) => void;
 };
 
@@ -98,11 +98,11 @@ export default function BookCard({
         .eq('user_id', userId)
         .eq('book_id', bookIdToCheck)
         .maybeSingle();
-      if (error) return console.warn('Error checking favorite:', error);
+  if (error) return;
       setIsFav(!!data);
       setFavLoading(false);
     } catch (err) {
-      console.warn('Failed to check favorite:', err);
+      // Swallow error silently
     }
   };
 
@@ -125,12 +125,12 @@ export default function BookCard({
           .eq('book_id', bookIdToCheck)
           .maybeSingle();
 
-        if (error) return console.warn('Error checking favorite:', error);
+  if (error) return;
 
         if (isMounted) setIsFav(!!data);
         setFavLoading(false);
       } catch (err) {
-        console.warn('Failed to check favorite:', err);
+        // Swallow error silently
       }
     };
 
@@ -277,14 +277,15 @@ export default function BookCard({
         </View>
 
         <View style={styles.content}>
+
           <Text style={styles.title} numberOfLines={1}>
-            {book.title || 'Untitled'}
+            {typeof book.title === 'string' && book.title.trim() ? book.title : 'Untitled'}
           </Text>
           <Text style={styles.author} numberOfLines={1}>
-            {book.author || 'Unknown Author'}
+            {typeof book.author === 'string' && book.author.trim() ? book.author : 'Unknown Author'}
           </Text>
 
-          {book.description ? (
+          {typeof book.description === 'string' && book.description.trim() ? (
             <Text style={styles.description} numberOfLines={2}>
               {book.description}
             </Text>
