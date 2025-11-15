@@ -1062,9 +1062,7 @@ const pickImage = async () => {
     </View>
   </View>
 </Modal>
-      {books.length > 0 &&
-        <Text style={{ color: '#fff', fontSize: 16, marginLeft: 150, marginBottom: 15 }}>{books?.length} books added</Text>
-      }
+    
 
 
       <Animated.View
@@ -1118,6 +1116,7 @@ const pickImage = async () => {
             <Text style={styles.modalTitle}>
               {editingBook ? "Edit Book" : "New Book"}
             </Text>
+            <Text onPress={resetForm} style={styles.modalClose} >x</Text>
                 <TouchableOpacity 
               style={[
                 styles.imageUploadBtn,
@@ -1266,6 +1265,8 @@ const pickImage = async () => {
         <BlurView intensity={100} tint="dark" style={styles.modalOverlay}>
           <View style={styles.smallModal}>
             <Text style={styles.modalTitle}>New Category</Text>
+            <Text onPress={() => setCategoryModalVisible(false)} style={styles.modalClose} >x</Text>
+
             <TextInput
               style={styles.input}
               placeholder="Name"
@@ -1382,6 +1383,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     letterSpacing: 0.5,
   },
+  modalClose: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+  },
   signOutBtn: { padding: 8 },
   searchBar: {
     flexDirection: "row",
@@ -1430,7 +1439,7 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginHorizontal: 20,
+    marginHorizontal: 50,
     marginBottom: 20,
     gap: 12,
   },
@@ -1442,6 +1451,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(139, 92, 246, 0.2)",
     paddingVertical: 14,
     borderRadius: 16,
+    width: 4,
+    height: 48,
     gap: 8,
   },
   categoryBtn: { backgroundColor: "rgba(34, 197, 94, 0.2)" },

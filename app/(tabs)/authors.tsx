@@ -10,7 +10,7 @@ import { consumeRequestedAuthor } from '../../lib/authorNav';
 import { supabase } from '../../supabase';
 
 const TOP_AUTHORS = [
-  'Stephen King', 'J.K. Rowling', 'Agatha Christie', 'James Patterson', 'John Grisham',
+  'Stephen King', 'J.K. Rowling', 'Agatha Christie', 'James Patterson',
   'Dan Brown', 'George R.R. Martin', 'J.R.R. Tolkien', 'C.S. Lewis', 'Haruki Murakami',
   'Margaret Atwood', 'Neil Gaiman', 'Paulo Coelho', 'Isabel Allende', 'Ernest Hemingway',
   'Jane Austen', 'Mark Twain', 'Charles Dickens', 'F. Scott Fitzgerald', 'Leo Tolstoy',
@@ -94,14 +94,11 @@ const TOP_AUTHORS = [
 ];
 
 
-// Ensure every author from TOP_AUTHORS is present in the genre map.
-// Default to 'General' and then apply specific overrides below.
 const TOP_AUTHORS_GENRE_MAP: Record<string, string> = TOP_AUTHORS.reduce((acc, name) => {
   acc[name] = 'General';
   return acc;
 }, {} as Record<string, string>);
 
-// Specific genre overrides for known authors (keeps mapping readable)
 const GENRE_OVERRIDES: Record<string, string> = {
   'Rumi': 'Poetry',
   'Lao Tzu': 'Philosophy',
@@ -116,7 +113,6 @@ const GENRE_OVERRIDES: Record<string, string> = {
   'J.K. Rowling': 'Fantasy',
   'Agatha Christie': 'Mystery',
   'James Patterson': 'Thriller',
-  'John Grisham': 'Legal Thriller',
   'Dan Brown': 'Thriller',
   'George R.R. Martin': 'Fantasy',
   'J.R.R. Tolkien': 'Fantasy',
@@ -510,7 +506,7 @@ const styles = StyleSheet.create({
   pagerText: { fontSize: 14, fontWeight: '700' },
   pagerInfo: { fontSize: 14 },
   searchInput: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, fontSize: 16, marginBottom: 10 },
-  genreScroll: { paddingVertical: 6 , height: 42 },
+  genreScroll: { paddingVertical: 6 , height: 80 },
   genreChip: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 18, marginRight: 8, borderWidth: 1, marginBottom: 6, height: 40, justifyContent: 'center', alignItems: 'center' },
   genreChipText: { fontSize: 14, fontWeight: '600' },
 });

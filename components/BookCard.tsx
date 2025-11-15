@@ -244,82 +244,75 @@ export default function BookCard({
           style={styles.gradientOverlay}
         />
 
-        <View style={styles.thumbnailWrapper}>
-          <TouchableOpacity style={styles.favButton} onPress={toggleFavorite} activeOpacity={0.8}>
-            {favLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-                <Ionicons
-                  name={isFav ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={isFav ? '#ef4444' : '#ffffff'}
-                />
-              </Animated.View>
-            )}
-          </TouchableOpacity>
-
-          <Image
-            source={imgUri ? { uri: imgUri } : bundledPlaceholder}
-            placeholder={blurhash}
-            contentFit="cover"
-            transition={300}
-            style={styles.thumbnail}
-            onLoadEnd={() => setImageLoading(false)}
-            onError={() => {
-              setImgUri('');
-              setImageLoading(false);
-            }}
-            cachePolicy="disk"
-          />
-
-       
-        </View>
-
-        <View style={styles.content}>
-
-          <Text style={styles.title} numberOfLines={1}>
-            {typeof book.title === 'string' && book.title.trim() ? book.title : 'Untitled'}
-          </Text>
-          <Text style={styles.author} numberOfLines={1}>
-            {typeof book.author === 'string' && book.author.trim() ? book.author : 'Unknown Author'}
-          </Text>
-
-          {typeof book.description === 'string' && book.description.trim() ? (
-            <Text style={styles.description} numberOfLines={2}>
-              {book.description}
-            </Text>
-          ) : null}
-
-          <View style={styles.metaRow}>
-            <Text style={styles.category}>
-              {categoryName || 'Uncategorized'}
-            </Text>
-            {book.status && (
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(book.status) + '30' }]}>
-                <Text style={[styles.statusText, { color: getStatusColor(book.status) }]}>
-                  {book.status}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.starsContainer}>
-            {renderStarsNode}
-          </View>
-
-          <View style={styles.actions}>
-            {onEdit && (
-              <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => onEdit(book)}>
-                <AntDesign name="edit" size={16} color="#fff" />
-                <Text style={styles.actionText}>Edit</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => onDelete(book.id)}>
-              <AntDesign name="delete" size={16} color="#fff" />
-              <Text style={styles.actionText}>Delete</Text>
+        <View style={styles.cardContent}>
+          <View style={styles.thumbnailWrapper}>
+            <TouchableOpacity style={styles.favButton} onPress={toggleFavorite} activeOpacity={0.8}>
+              {favLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                  <Ionicons
+                    name={isFav ? 'heart' : 'heart-outline'}
+                    size={20}
+                    color={isFav ? '#ef4444' : '#ffffff'}
+                  />
+                </Animated.View>
+              )}
             </TouchableOpacity>
+
+            <Image
+              source={imgUri ? { uri: imgUri } : bundledPlaceholder}
+              placeholder={blurhash}
+              contentFit="cover"
+              transition={300}
+              style={styles.thumbnail}
+              onLoadEnd={() => setImageLoading(false)}
+              onError={() => {
+                setImgUri('');
+                setImageLoading(false);
+              }}
+              cachePolicy="disk"
+            />
+          </View>
+
+          <View style={styles.content}>
+            <Text style={styles.title} numberOfLines={2}>
+              {typeof book.title === 'string' && book.title.trim() ? book.title : 'Untitled'}
+            </Text>
+            <Text style={styles.author} numberOfLines={1}>
+              {typeof book.author === 'string' && book.author.trim() ? book.author : 'Unknown Author'}
+            </Text>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.category} numberOfLines={1}>
+                {categoryName || 'Uncategorized'}
+              </Text>
+              {book.status && (
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(book.status) + '30' }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(book.status) }]}>
+                    {book.status}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.starsContainer}>
+              {renderStarsNode}
+            </View>
+
+            <View style={styles.actions}>
+              {onEdit && (
+                <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => onEdit(book)}>
+                  <AntDesign name="edit" size={14} color="#fff" />
+                  <Text style={styles.actionText}>Edit</Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => onDelete(book.id)}>
+                <AntDesign name="delete" size={14} color="#fff" />
+                <Text style={styles.actionText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </BlurView>
@@ -329,17 +322,17 @@ export default function BookCard({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    marginBottom: 16,
-    borderRadius: 20,
+    marginBottom: 25,
+    borderRadius: 16,
     overflow: 'hidden',
-    elevation: 8,
+    elevation: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
   },
   blurCard: {
-    borderRadius: 20,
+    borderRadius: 16,
     backgroundColor: 'rgba(30, 30, 46, 0.7)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.12)',
@@ -349,100 +342,104 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 120,
+    height: 80,
     zIndex: 0,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    padding: 12,
+    gap: 12,
+    alignItems: 'flex-start',
   },
   thumbnailWrapper: {
     position: 'relative',
-    alignSelf: 'center',
-    marginTop: 16,
-    borderRadius: 16,
+    borderRadius: 12,
     overflow: 'hidden',
-    elevation: 6,
+    elevation: 4,
     backgroundColor: '#1a1a2e',
+    flexShrink: 0,
   },
   thumbnail: {
-    width: 150,
-    height: 220,
-    borderRadius: 16,
+    width: 110,
+    height: 155,
+    borderRadius: 12,
   },
   imageSkeleton: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(139, 92, 246, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 12,
   },
   favButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 8,
-    borderRadius: 25,
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 6,
+    borderRadius: 20,
     zIndex: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
   content: {
-    padding: 16,
-    paddingTop: 12,
+    flex: 1,
+    paddingTop: 2,
+    gap: 6,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#ffffff',
-    marginBottom: 4,
   },
   author: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#d1d5db',
-    marginBottom: 6,
     fontWeight: '500',
   },
   description: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#9ca3af',
-    lineHeight: 18,
-    marginBottom: 10,
+    lineHeight: 16,
   },
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    gap: 8,
+    flexWrap: 'wrap',
   },
   category: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#a78bfa',
     fontWeight: '600',
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'capitalize',
   },
   starsContainer: {
-    marginBottom: 12,
     alignItems: 'flex-start',
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 10,
+    gap: 8,
+    marginTop: 4,
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    gap: 4,
   },
   editBtn: {
     backgroundColor: '#3b82f6',
@@ -452,7 +449,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
 });

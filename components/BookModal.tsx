@@ -365,6 +365,7 @@ const styles = StyleSheet.create({
   closeGradient: {
     paddingVertical: 16,
     alignItems: 'center',
+    borderRadius: 16,
   },
   closeText: {
     color: '#fff',
@@ -413,6 +414,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginBottom: 10,
+    borderRadius: 12,
   },
   readText: {
     color: '#fff',
