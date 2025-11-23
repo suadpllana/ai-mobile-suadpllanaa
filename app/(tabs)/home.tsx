@@ -7,20 +7,20 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  Easing,
-  FlatList,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    Easing,
+    FlatList,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SelectList } from "react-native-dropdown-select-list";
 import Toast from 'react-native-toast-message';
@@ -775,7 +775,7 @@ const pickImage = async () => {
         </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
 
-          {rating  &&(
+          {rating > 0 &&(
          <TouchableOpacity
           onPress={() => handleDeleteReview(bookId)}
           disabled={loading}
