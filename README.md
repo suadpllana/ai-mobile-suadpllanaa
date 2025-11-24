@@ -1,50 +1,101 @@
-# Welcome to your Expo app 👋
+# Books Club 📚
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Books Club** is a mobile application built with [Expo](https://expo.dev) and [React Native](https://reactnative.dev/) that allows users to discover books, track their reading progress, manage favorites, and explore authors. It leverages [Supabase](https://supabase.com/) for backend services including authentication and database management.
 
-## Get started
+## 🚀 Features
 
-1. Install dependencies
+- **Authentication**: Secure user sign-up, login, and password reset functionality.
+- **Discover**: Browse and search for new books to read.
+- **Reading Progress**: Track your reading sessions, view statistics, and set reading goals.
+- **Favorites**: Save books to your personal favorites list.
+- **Authors**: Explore author profiles and their works.
+- **Recommendations**: Get personalized book recommendations.
+- **Profile**: Manage your user profile and settings.
 
-   ```bash
-   npm install
-   ```
+## 🛠 Tech Stack
 
-2. Start the app
+- **Framework**: [Expo](https://docs.expo.dev/) (React Native)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Navigation**: [Expo Router](https://docs.expo.dev/router/introduction/)
+- **Backend**: [Supabase](https://supabase.com/) (Auth, Database, Storage)
+- **State Management/Data Fetching**: React Hooks
+- **UI Components**: Custom components & React Native core components
+- **Charts**: `react-native-chart-kit` for reading statistics
 
-   ```bash
-   npx expo start
-   ```
+## 📂 Project Structure
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+MyProjectName/
+├── app/                 # Expo Router pages and layouts
+│   ├── (tabs)/          # Main tab navigation (Home, Discover, etc.)
+│   ├── auth.tsx         # Authentication screen
+│   ├── index.tsx        # Entry point
+│   └── ...
+├── assets/              # Images and fonts
+├── components/          # Reusable UI components
+│   ├── reading-progress/# Components specific to reading stats
+│   └── ui/              # Generic UI elements
+├── constants/           # App constants (Colors, Theme)
+├── hooks/               # Custom React hooks
+├── lib/                 # Helper functions and utilities
+├── scripts/             # Build and maintenance scripts
+├── supabase.ts          # Supabase client configuration
+└── ...
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🏁 Getting Started
 
-## Learn more
+### Prerequisites
 
-To learn more about developing your project with Expo, look at the following resources:
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- [Expo Go](https://expo.dev/client) app on your mobile device (iOS/Android)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Environment Setup
 
-## Join the community
+Create a `.env` file in the root directory (or ensure your environment variables are set) with your Supabase credentials:
 
-Join our community of developers creating universal apps.
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EXPO_PUBLIC_HUGGING_FACE_API_KEY = hugging_face_api_key
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone <repository-url>
+    cd MyProjectName
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+### Running the App
+
+Start the development server:
+
+```bash
+npx expo start
+```
+
+- **Scan the QR code** with the Expo Go app (Android) or Camera app (iOS).
+- Press `a` to open in Android Emulator.
+- Press `i` to open in iOS Simulator.
+- Press `w` to open in Web Browser.
+
+## 📜 Scripts
+
+- `npm start`: Starts the Expo development server.
+- `npm run android`: Opens the app in the Android Emulator.
+- `npm run ios`: Opens the app in the iOS Simulator.
+- `npm run web`: Opens the app in the web browser.
+- `npm run reset-project`: Resets the project to a blank state (use with caution).
+- `npm run lint`: Runs the linter to check for code issues.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
