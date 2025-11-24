@@ -1,14 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import React, { useEffect, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Modal,
+  Platform,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { supabase } from "../../supabase";
 import { ThemedText } from "../themed-text";
@@ -41,13 +43,16 @@ export function ReadingGoals({
     }),
   });
 
-  useEffect(() => {
-    fetchGoals();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchGoals();
+    }, [])
+  );
 
   // Request permission once
   useEffect(() => {
     (async () => {
+      if (Platform.OS === 'web') return;
       if (!Device.isDevice) return;
 
       const { status: existing } = await Notifications.getPermissionsAsync();
@@ -70,6 +75,7 @@ export function ReadingGoals({
     let mounted = true;
 
     const manage = async () => {
+      if (Platform.OS === 'web') return;
       if (!Device.isDevice) return;
 
       const needsReminder =
@@ -122,34 +128,59 @@ export function ReadingGoals({
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. User settings
       const { data: progress } = await supabase
         .from("reading_progress")
-        .select(
-          "daily_goal, manual_pages_today, streak, pages_day1,pages_day2,pages_day3,pages_day4,pages_day5,pages_day6,pages_day7"
-        )
+        .select("manual_pages_today, daily_goal, streak, updated_at, pages_day7")
         .eq("id", user.id)
         .maybeSingle();
 
-      const savedGoal = progress?.daily_goal ?? 30;
-      const manualToday = progress?.manual_pages_today ?? 0;
-
-      // 2. Auto-tracked sessions for today
       const today = new Date().toISOString().split("T")[0];
-      const { data: sessions } = await supabase
-        .from("reading_sessions")
-        .select("pages_read")
-        .gte("created_at", `${today}T00:00:00`)
-        .lte("created_at", `${today}T23:59:59`);
+      const lastUpdated = progress?.updated_at
+        ? new Date(progress.updated_at).toISOString().split("T")[0]
+        : null;
 
-      const autoToday =
-        sessions?.reduce((a, s) => a + (s.pages_read ?? 0), 0) ?? 0;
-      const todayPages = manualToday > 0 ? manualToday : autoToday;
+      let manualPages = progress?.manual_pages_today || 0;
+      let streak = progress?.streak ?? 0;
+      const dailyGoal = progress?.daily_goal || 30;
+
+      // Reset pages if it's a new day
+      if (lastUpdated && lastUpdated !== today) {
+        const lastDate = new Date(lastUpdated + "T00:00:00");
+        const todayDate = new Date(today + "T00:00:00");
+        const diffDays = Math.floor(
+          (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // Check if streak should be broken
+        const previousPages = progress?.pages_day7 ?? 0;
+        if (diffDays === 1) {
+          // Consecutive day: keep or break streak based on yesterday's goal
+          if (previousPages < dailyGoal) {
+            streak = 0; // Broke streak by not meeting goal yesterday
+          }
+        } else if (diffDays > 1) {
+          // Missed day(s): break streak
+          streak = 0;
+        }
+
+        // Reset manual pages for new day
+        manualPages = 0;
+
+        // Update database with reset values
+        await supabase
+          .from("reading_progress")
+          .update({
+            manual_pages_today: 0,
+            streak: streak,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", user.id);
+      }
 
       setGoals({
-        dailyPages: savedGoal,
-        completedToday: todayPages,
-        streak: progress?.streak ?? 0,
+        dailyPages: dailyGoal,
+        completedToday: manualPages,
+        streak: streak,
       });
     } catch (e) {
       console.error("fetchGoals error:", e);
@@ -176,7 +207,7 @@ export function ReadingGoals({
       const { data: existing } = await supabase
         .from("reading_progress")
         .select(
-          "pages_day1, manual_pages, pages_day2,pages_day3,pages_day4,pages_day5,pages_day6,pages_day7,streak,daily_goal,updated_at"
+          "pages_day1, manual_pages_today, pages_day2,pages_day3,pages_day4,pages_day5,pages_day6,pages_day7,streak,daily_goal,updated_at"
         )
         .eq("id", user.id)
         .maybeSingle();
@@ -232,8 +263,14 @@ export function ReadingGoals({
         // Same day → just overwrite today
         newDays[6] = pages;
         const goal = existing?.daily_goal ?? goals.dailyPages ?? 30;
-        if (pages >= goal) {
-          newStreak = existing?.streak ?? 0; // keep current streak
+        const previousPagesDay7 = existing?.pages_day7 ?? 0;
+        
+        // If user meets the goal and hasn't already been counted today
+        if (pages >= goal && previousPagesDay7 < goal) {
+          newStreak = (existing?.streak ?? 0) + 1;
+        } else if (pages >= goal) {
+          // Already met goal before, keep streak
+          newStreak = existing?.streak ?? 0;
         } else {
           newStreak = 0;
         }
