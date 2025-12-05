@@ -5,22 +5,22 @@ import { BlurView } from "expo-blur";
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Easing,
-    FlatList,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SelectList } from "react-native-dropdown-select-list";
 import Toast from 'react-native-toast-message';
@@ -261,7 +261,7 @@ const pickImage = async () => {
     });
 
   } catch (err: any) {
-    console.error('Upload failed:', err);
+    logger.error('Upload failed:', err);
     Toast.show({
       type: 'error',
       text1: 'Upload Failed',
@@ -448,7 +448,7 @@ const pickImage = async () => {
           .eq('user_id', userId);
         setCategories(categoriesData || []);
       } catch (err) {
-        console.warn('Realtime update failed to fetch data', err);
+        logger.warn('Realtime update failed to fetch data', err);
       }
     };
 
@@ -734,7 +734,7 @@ const pickImage = async () => {
     setModalVisible(true);
   };
 
-  const filteredBooks = books.filter((book) => {
+  const filteredBooks = useMemo(() => books.filter((book) => {
     const matchesTitle = book.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategoryId === "all" || book.category_id === filterCategoryId;
     const matchesStatus = filterStatus === "all" || (book.status ?? "want to read") === filterStatus;
@@ -744,13 +744,13 @@ const pickImage = async () => {
       matchesRating = review ? String(review.rating) === filterRating : false;
     }
     return matchesTitle && matchesCategory && matchesStatus && matchesRating;
-  });
+  }), [books, searchQuery, filterCategoryId, filterStatus, filterRating, reviews, userId]);
 
-  const sortedBooks = [...filteredBooks].sort((a, b) => {
+  const sortedBooks = useMemo(() => [...filteredBooks].sort((a, b) => {
     const posA = a.position ?? 0;
     const posB = b.position ?? 0;
     return sortAscending ? posA - posB : posB - posA;
-  });
+  }), [filteredBooks, sortAscending]);
 
   const renderStars = (bookId: string) => {
     const rating =
@@ -1130,7 +1130,7 @@ const pickImage = async () => {
                     source={{ uri: selectedImage }}
                     style={styles.selectedImage}
                     onError={(error) => {
-                      console.error('Image load error:', error);
+                      logger.error('Image load error:', error);
                       setSelectedImage(null);
                       Toast.show({
                         type: 'error',

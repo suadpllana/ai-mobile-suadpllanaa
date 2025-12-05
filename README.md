@@ -26,22 +26,71 @@
 
 ```
 MyProjectName/
-├── app/                 # Expo Router pages and layouts
-│   ├── (tabs)/          # Main tab navigation (Home, Discover, etc.)
-│   ├── auth.tsx         # Authentication screen
-│   ├── index.tsx        # Entry point
+├── app/                    # Expo Router pages and layouts
+│   ├── (tabs)/             # Main tab navigation (Home, Discover, etc.)
+│   ├── auth.tsx            # Authentication screen
+│   ├── index.tsx           # Entry point
 │   └── ...
-├── assets/              # Images and fonts
-├── components/          # Reusable UI components
-│   ├── reading-progress/# Components specific to reading stats
-│   └── ui/              # Generic UI elements
-├── constants/           # App constants (Colors, Theme)
-├── hooks/               # Custom React hooks
-├── lib/                 # Helper functions and utilities
-├── scripts/             # Build and maintenance scripts
-├── supabase.ts          # Supabase client configuration
-└── ...
+├── assets/                 # Images and fonts
+├── components/             # Reusable UI components
+│   ├── reading-progress/   # Components specific to reading stats
+│   ├── ui/                 # Generic UI elements
+│   ├── ErrorBoundary.tsx   # Error handling component
+│   └── LoadingSkeleton.tsx # Loading state components
+├── constants/              # App constants (Colors, Theme)
+├── hooks/                  # Custom React hooks
+│   ├── useAuth.ts          # Authentication hook
+│   ├── useBooks.ts         # Books data management
+│   ├── useCategories.ts    # Categories management
+│   ├── useReviews.ts       # Reviews management
+│   └── useDebounce.ts      # Debounce hook
+├── lib/                    # Helper functions and utilities
+├── services/               # API service layer
+│   ├── bookService.ts      # Book CRUD operations
+│   ├── categoryService.ts  # Category operations
+│   └── reviewService.ts    # Review operations
+├── types/                  # TypeScript type definitions
+│   └── index.ts            # Shared types
+├── utils/                  # Utility functions
+│   ├── constants.ts        # App-wide constants
+│   ├── debounce.ts         # Debounce utilities
+│   ├── logger.ts           # Centralized logging
+│   └── validation.ts       # Input validation
+├── scripts/                # Build and maintenance scripts
+├── supabase.ts             # Supabase client configuration
+├── .env.example            # Environment variables template
+├── IMPROVEMENTS.md         # Documentation of improvements
+└── MIGRATION_GUIDE.md      # Guide for using new features
 ```
+
+## 🎯 Recent Improvements
+
+This project has undergone significant refactoring to improve code quality, performance, and maintainability:
+
+### ✅ Code Quality
+- **Centralized Logging**: Replaced console statements with a proper logging service
+- **Type Safety**: Comprehensive TypeScript types throughout the application
+- **Service Layer**: API calls organized into service classes
+- **Custom Hooks**: Reusable hooks for data fetching and state management
+
+### ✅ Performance
+- **React.memo**: List components optimized with memoization
+- **useCallback/useMemo**: Expensive operations properly memoized
+- **Debouncing**: Search inputs debounced to reduce API calls
+- **Loading Skeletons**: Better perceived performance during data loading
+
+### ✅ Error Handling
+- **Error Boundaries**: Crash protection for UI components
+- **Consistent Error Handling**: Unified approach across the app
+- **Better Error Messages**: User-friendly error notifications
+
+### ✅ Developer Experience
+- **Constants Management**: All magic values centralized
+- **Validation Utilities**: Reusable validation functions
+- **JSDoc Documentation**: Comprehensive inline documentation
+- **Migration Guides**: Step-by-step guides for adopting new patterns
+
+See [IMPROVEMENTS.md](./IMPROVEMENTS.md) for detailed information and [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) for usage examples.
 
 ## 🏁 Getting Started
 
@@ -53,13 +102,19 @@ MyProjectName/
 
 ### Environment Setup
 
-Create a `.env` file in the root directory (or ensure your environment variables are set) with your Supabase credentials:
+1. Copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
 
-```env
-EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-EXPO_PUBLIC_HUGGING_FACE_API_KEY = hugging_face_api_key
-```
+2. Update `.env` with your actual credentials:
+   ```env
+   EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   HUGGING_FACE_API_TOKEN=your_hugging_face_token
+   ```
+
+**Note**: Never commit the `.env` file. It's already in `.gitignore`.
 
 ### Installation
 

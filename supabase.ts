@@ -3,11 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import 'react-native-url-polyfill/auto';
+import { envConfig } from './utils/env';
 
 // -------------------------------------------------------------------
-// 1. Supabase credentials (Expo env variables)
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+// 1. Supabase credentials (validated from environment)
+const { supabaseUrl, supabaseAnonKey } = envConfig.getConfig();
 
 // -------------------------------------------------------------------
 // 2. Storage that satisfies Supabase's `Storage` interface

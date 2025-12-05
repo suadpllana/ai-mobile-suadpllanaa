@@ -8,7 +8,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { LineChart } from "react-native-chart-kit";
 import { styles } from "../(tabs)/reading-progress/styles";
 import { ProgressStats } from "../../components/reading-progress/ProgressStats";
 import { ReadingGoals } from "../../components/reading-progress/ReadingGoals";
@@ -185,7 +184,7 @@ async function fetchReadingProgress() {
 
     setLoading(false);
   } catch (error) {
-    console.error("Error:", error);
+    logger.error("Error:", error);
     setLoading(false);
   }
 }

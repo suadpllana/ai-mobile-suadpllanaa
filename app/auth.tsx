@@ -2,20 +2,23 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Easing,
-  Keyboard,
-  Modal,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Easing,
+    Keyboard,
+    Modal,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { supabase } from '../supabase';
+import { logger } from '../utils/logger';
+import { validateEmail, validatePassword, validatePasswordMatch } from '../utils/validation';
+import { sanitizeInput } from '../utils/security';
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
@@ -79,11 +82,6 @@ export default function AuthScreen() {
     };
   }, [keyboardOffset]);
 
-  const validateEmail = (value: string) => {
-    const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
-    return re.test(String(value).toLowerCase());
-  };
-
   const createDefaultCategories = async (userId: string) => {
     const defaultCategories = [
       'Fiction', 'Non-Fiction', 'Mystery', 'Science Fiction', 'Fantasy', 'Romance',
@@ -95,7 +93,7 @@ export default function AuthScreen() {
       const categories = defaultCategories.map(name => ({ name, user_id: userId }));
       await supabase.from('categories').insert(categories);
     } catch (err) {
-      console.warn('Failed to create default categories:', err);
+      logger.warn('Failed to create default categories:', err);
     }
   };
 
@@ -103,31 +101,43 @@ export default function AuthScreen() {
     setLoading(true);
     setError('');
 
+    // Sanitize inputs
+    const sanitizedEmail = sanitizeInput(email);
+    const sanitizedFirstName = sanitizeInput(firstName);
+    const sanitizedLastName = sanitizeInput(lastName);
+    const sanitizedPhone = sanitizeInput(phone);
+
     if (mode === 'sign-up') {
-      if (!firstName.trim() || !lastName.trim()) {
+      if (!sanitizedFirstName.trim() || !sanitizedLastName.trim()) {
         setError('Please provide your full name.');
         setLoading(false);
         return;
       }
-      if (password !== confirmPassword) {
-        setError('Passwords do not match.');
+      
+      const passwordMatch = validatePasswordMatch(password, confirmPassword);
+      if (!passwordMatch.isValid) {
+        setError(passwordMatch.error || 'Passwords do not match.');
+        setLoading(false);
+        return;
+      }
+      
+      // Validate password strength for sign-up
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        setError(passwordValidation.error || 'Password does not meet requirements.');
         setLoading(false);
         return;
       }
     }
 
-    if (!email || !password) {
+    if (!sanitizedEmail || !password) {
       setError('Email and password are required.');
       setLoading(false);
       return;
     }
-    if (!validateEmail(email)) {
+    
+    if (!validateEmail(sanitizedEmail)) {
       setError('Please enter a valid email address.');
-      setLoading(false);
-      return;
-    }
-    if (mode == 'sign-up' && password.length < 6) {
-      setError('Password must be at least 6 characters.');
       setLoading(false);
       return;
     }
@@ -135,13 +145,13 @@ export default function AuthScreen() {
     try {
       if (mode === 'sign-up') {
         const { data: { user }, error: signUpError } = await supabase.auth.signUp({
-          email,
+          email: sanitizedEmail,
           password,
           options: { 
             data: { 
-              first_name: firstName.trim(), 
-              last_name: lastName.trim(),
-              phone: phone?.trim() || null,
+              first_name: sanitizedFirstName.trim(), 
+              last_name: sanitizedLastName.trim(),
+              phone: sanitizedPhone.trim() || null,
               created_at: new Date().toISOString()
             } 
           },
@@ -151,11 +161,11 @@ export default function AuthScreen() {
 
         if (user) await createDefaultCategories(user.id);
 
-        if (user && phone?.trim()) {
+        if (user && sanitizedPhone.trim()) {
           try {
-            await supabase.from('profiles').insert([{ id: user.id, phone: phone.trim() }]);
+            await supabase.from('profiles').insert([{ id: user.id, phone: sanitizedPhone.trim() }]);
           } catch (e) {
-            console.warn('Could not insert phone into profiles table:', e);
+            logger.warn('Could not insert phone into profiles table:', e);
           }
         }
 
@@ -167,7 +177,10 @@ export default function AuthScreen() {
         setConfirmPassword('');
         setPhone('');
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        const { error: signInError } = await supabase.auth.signInWithPassword({ 
+          email: sanitizedEmail, 
+          password 
+        });
         if (signInError) throw signInError;
         router.replace('/');
       }

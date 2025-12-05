@@ -297,7 +297,14 @@ export default function DiscoverScreen() {
             style={styles.searchRow}
           >
             <View style={styles.inputContainer}>
-              <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFillObject} />
+              {Platform.OS !== 'web' && (
+                <BlurView 
+                  intensity={80} 
+                  tint="dark" 
+                  style={StyleSheet.absoluteFillObject}
+                  pointerEvents="none"
+                />
+              )}
 
               <TextInput
                 style={styles.input}
@@ -347,6 +354,10 @@ export default function DiscoverScreen() {
                 setCategoryDropdownVisible(true);
               }}
               onFocus={() => setCategoryDropdownVisible(true)}
+              onBlur={() => {
+                // Delay hiding dropdown to allow item selection
+                setTimeout(() => setCategoryDropdownVisible(false), 200);
+              }}
               style={styles.categoryInput}
             />
             {(categoryQuery.length > 0 || selectedCategory) && (

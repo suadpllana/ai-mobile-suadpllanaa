@@ -4,17 +4,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, Layout } from 'react-native-reanimated';
 import BookModal from '../../components/BookModal';
@@ -54,7 +54,7 @@ export default function RecommendScreen() {
       const data = await resp.json();
       setTrendingBooks(formatBooks(data.items || []));
     } catch (err: any) {
-      console.error('Failed to load trending books:', err);
+      logger.error('Failed to load trending books:', err);
     }
   };
 
@@ -166,7 +166,7 @@ export default function RecommendScreen() {
       let res = await supabase.from('books').insert([payload]).select('*').single();
 
       if (res.error) {
-        console.warn('Insert error', res.error);
+        logger.warn('Insert error', res.error);
         const retry = await supabase
           .from('books')
           .insert([

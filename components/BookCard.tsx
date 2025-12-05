@@ -15,14 +15,18 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
+import { analytics } from '../utils/analytics';
+import { getBookCardLabel, getImageAccessibilityProps, getTouchableAccessibilityProps } from '../utils/accessibility';
+import { optimizeBookCoverUrl } from '../utils/imageCache';
+import type { Book } from '../types/common';
 
 type Props = {
-  book: any;
+  book: Book | any;
   categoryName?: string;
-  onEdit?: (book: any) => void;
+  onEdit?: (book: Book | any) => void;
   onDelete: (id: string) => void;
   renderStars: (bookId: string) => React.ReactNode;
-  onPress?: (book: any) => void;
+  onPress?: (book: Book | any) => void;
   imageUrl?: string | null;
   reloadPage?: boolean;
   fetchFavorites?: () => void;
@@ -31,7 +35,7 @@ type Props = {
 
 const blurhash = '|rF?hV%:FhnjWFj@Ni7sR?WCR-D|NIR?WBs1kCae'; 
 
-export default function BookCard({
+function BookCardComponent({
   book,
   categoryName,
   onEdit,
@@ -54,8 +58,7 @@ export default function BookCard({
   useEffect(() => {
     if (!book && !imageUrl) return;
 
-    let src =
-      imageUrl ||
+    const src = imageUrl ||
       book?.imageUrl ||
       book?.image ||
       book?.image_url ||
@@ -64,18 +67,11 @@ export default function BookCard({
       book?.cover?.large ||
       null;
 
-    if (src && src.includes('books.google.com')) {
-      src = src.replace('http://', 'https://');
-      src += '&edge=curl';
-    }
-
-    const hasValid = typeof src === 'string' && src.trim() !== '';
-    const finalUri = hasValid
-      ? `${src}${src.includes('?') ? '&' : '?'}cb=${book?.id || Date.now()}`
-      : '';
-
-    setImgUri(finalUri);
-    setImageLoading(hasValid);
+    // Use optimization utility
+    const optimizedUri = optimizeBookCoverUrl(src, book?.id);
+    
+    setImgUri(optimizedUri);
+    setImageLoading(!!optimizedUri);
   }, [imageUrl, book]);
 
   useFocusEffect(
@@ -182,6 +178,7 @@ export default function BookCard({
         Toast.show({ type: 'info', text1: 'Removed from favorites' });
         setIsFav(false);
         setRefreshPage?.(prev => !prev);
+        analytics.trackUserAction('remove_favorite', 'book', { book_id: bookIdToUse });
       } else {
         const payload = {
           user_id: userId,
@@ -198,9 +195,11 @@ export default function BookCard({
         Toast.show({ type: 'success', text1: 'Added to favorites' });
         setIsFav(true);
         setRefreshPage?.(prev => !prev);
+        analytics.trackUserAction('add_favorite', 'book', { book_id: bookIdToUse });
       }
     } catch (error: any) {
       Alert.alert('Error', error?.message || 'Failed to update favorite');
+      analytics.trackError(error as Error, 'toggleFavorite');
     } finally {
       setFavLoading(false);
       fetchFavorites?.();
@@ -234,9 +233,16 @@ export default function BookCard({
 
   return (
     <TouchableOpacity
-      onPress={() => onPress?.(book)}
+      onPress={() => {
+        onPress?.(book);
+        analytics.trackUserAction('view_book', 'book_card', { book_id: book.id });
+      }}
       activeOpacity={0.9}
       style={styles.cardContainer}
+      {...getTouchableAccessibilityProps(
+        getBookCardLabel(book.title, book.author),
+        'Double tap to view book details'
+      )}
     >
       <BlurView intensity={80} tint="dark" style={styles.blurCard}>
         <LinearGradient
@@ -246,7 +252,15 @@ export default function BookCard({
 
         <View style={styles.cardContent}>
           <View style={styles.thumbnailWrapper}>
-            <TouchableOpacity style={styles.favButton} onPress={toggleFavorite} activeOpacity={0.8}>
+            <TouchableOpacity 
+              style={styles.favButton} 
+              onPress={toggleFavorite} 
+              activeOpacity={0.8}
+              {...getTouchableAccessibilityProps(
+                isFav ? 'Remove from favorites' : 'Add to favorites',
+                `Double tap to ${isFav ? 'remove from' : 'add to'} favorites`
+              )}
+            >
               {favLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
@@ -319,6 +333,8 @@ export default function BookCard({
     </TouchableOpacity>
   );
 }
+
+const BookCard = React.memo(BookCardComponent);
 
 const styles = StyleSheet.create({
   cardContainer: {
@@ -453,3 +469,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default BookCard;

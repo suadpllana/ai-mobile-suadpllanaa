@@ -4,21 +4,22 @@ import Linking from 'expo-linking';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Easing,
-  Keyboard,
-  Modal,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Easing,
+    Keyboard,
+    Modal,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
+import logger from '../utils/logger';
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in');
@@ -45,7 +46,7 @@ export default function AuthScreen() {
 useEffect(() => {
     const handleDeepLink = async (url: string | null) => {
       if (!url) return;
-      console.log('Deep link received:', url); // exp://192.168.1.134:8081/--/#access_token=...
+      logger.debug('Deep link received:', url);
 
       const { error, data } = await supabase.auth.exchangeCodeForSession(url);
       if (error) {
@@ -145,7 +146,7 @@ useEffect(() => {
       const categories = defaultCategories.map(name => ({ name, user_id: userId }));
       await supabase.from('categories').insert(categories);
     } catch (err) {
-      console.warn('Failed to create default categories:', err);
+      logger.warn('Failed to create default categories:', err);
     }
   };
 
@@ -206,14 +207,14 @@ useEffect(() => {
           try {
             await supabase.from('users').insert([{ id: user.id, phone: phone.trim() }]);
           } catch (e) {
-            console.warn('Could not insert phone into users table:', e);
+            logger.warn('Could not insert phone into users table:', e);
           }
         }
 
         try {
           await supabase.auth.updateUser({ data: { phone: phone?.trim() || null } });
         } catch (err) {
-          console.warn('Could not update auth user metadata with phone:', err);
+          logger.warn('Could not update auth user metadata with phone:', err);
         }
 
         Alert.alert('Check your email', 'Confirm your account to continue.', [{ text: 'OK' }]);

@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, T
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
+import logger from '../utils/logger';
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const { email: emailParam } = useLocalSearchParams();
@@ -24,7 +25,7 @@ export default function ResetPasswordScreen() {
       try {
         const { data, error } = await supabase.from('profiles').select('id,email').eq('email', email).maybeSingle();
         if (error) {
-          console.warn('Error fetching profile for reset:', error);
+          logger.warn('Error fetching profile for reset:', error);
           Toast.show({ type: 'error', text1: 'Lookup failed', text2: error.message || 'Could not check that email' });
           setProfileExists(false);
           return;
@@ -38,7 +39,7 @@ export default function ResetPasswordScreen() {
 
         setProfileExists(true);
       } catch (err) {
-        console.warn('Unexpected error checking profile:', err);
+        logger.warn('Unexpected error checking profile:', err);
         Toast.show({ type: 'error', text1: 'Error', text2: 'Unexpected error while checking that email' });
         setProfileExists(false);
       }

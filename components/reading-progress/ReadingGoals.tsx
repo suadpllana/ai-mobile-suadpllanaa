@@ -4,15 +4,16 @@ import * as Notifications from "expo-notifications";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Modal,
-  Platform,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Modal,
+    Platform,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { supabase } from "../../supabase";
+import { logger } from "../../utils/logger";
 import { ThemedText } from "../themed-text";
 
 export function ReadingGoals({
@@ -31,6 +32,7 @@ export function ReadingGoals({
   const [pagesModal, setPagesModal] = useState(false);
   const [pagesInput, setPagesInput] = useState("");
   const notifIdRef = useRef<string | null>(null);
+  const lastFetchRef = useRef<string | null>(null);
 
   // ──────────────────────────────────────────────────────────────
   // Notification setup
@@ -40,12 +42,18 @@ export function ReadingGoals({
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
     }),
   });
 
   useFocusEffect(
     useCallback(() => {
-      fetchGoals();
+      // Only fetch if we haven't fetched today yet
+      const today = new Date().toISOString().split("T")[0];
+      if (lastFetchRef.current !== today) {
+        fetchGoals();
+      }
     }, [])
   );
 
@@ -89,7 +97,11 @@ export function ReadingGoals({
               body: `You haven't reached ${goals.dailyPages} pages today.`,
               sound: true,
             },
-            trigger: { hour: 20, minute: 0, repeats: true },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
+              hour: 20,
+              minute: 0,
+            },
           });
           if (mounted) notifIdRef.current = id;
         }
@@ -151,19 +163,15 @@ export function ReadingGoals({
           (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
         );
 
-        // Check if streak should be broken
         const previousPages = progress?.pages_day7 ?? 0;
         if (diffDays === 1) {
-          // Consecutive day: keep or break streak based on yesterday's goal
           if (previousPages < dailyGoal) {
             streak = 0; // Broke streak by not meeting goal yesterday
           }
         } else if (diffDays > 1) {
-          // Missed day(s): break streak
           streak = 0;
         }
 
-        // Reset manual pages for new day
         manualPages = 0;
 
         // Update database with reset values
@@ -182,8 +190,11 @@ export function ReadingGoals({
         completedToday: manualPages,
         streak: streak,
       });
+      
+      // Mark that we've fetched today
+      lastFetchRef.current = today;
     } catch (e) {
-      console.error("fetchGoals error:", e);
+      logger.error("fetchGoals error:", e);
     }
   }
 
@@ -299,7 +310,7 @@ export function ReadingGoals({
 
       // Fallback if `streak` column is missing
       if (error && error.message.toLowerCase().includes("streak")) {
-        console.warn("streak column missing – retrying without it");
+        logger.warn("streak column missing – retrying without it");
         const { streak, ...noStreak } = payload;
         const { error: e2 } = await supabase
           .from("reading_progress")
@@ -320,7 +331,7 @@ export function ReadingGoals({
       Alert.alert("Success!", `${pages} pages logged`);
       onPagesUpdated?.();
     } catch (err: any) {
-      console.error("savePagesReadToday error:", err);
+      logger.error("savePagesReadToday error:", err);
       Alert.alert("Error", err.message ?? "Failed to save");
     }
   }

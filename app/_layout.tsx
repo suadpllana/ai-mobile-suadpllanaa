@@ -1,10 +1,20 @@
 import { Stack, usePathname, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { supabase } from '../supabase';
+import { analytics, trackScreenView } from '../utils/analytics';
+
 export default function Layout() {
   const router = useRouter();
   const pathname = usePathname();
   const [hasSession, setHasSession] = useState<boolean | null>(null);
+
+  // Track screen views
+  useEffect(() => {
+    if (pathname) {
+      trackScreenView(pathname);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -12,6 +22,15 @@ export default function Layout() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
       setHasSession(!!session);
+      
+      // Set analytics user properties
+      if (session?.user) {
+        analytics.setUserProperties({
+          user_id: session.user.id,
+          email: session.user.email || '',
+        });
+      }
+      
       // Allow some unauthenticated routes (like reset-password) to be reachable
       const allowedUnauthenticated = ['/','/auth','/reset-password'];
       const isAllowed = allowedUnauthenticated.some(p => pathname === p || pathname?.startsWith(p + '?') || pathname?.startsWith(p + '/'));
@@ -45,9 +64,11 @@ export default function Layout() {
   if (hasSession === null) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {!hasSession && <Stack.Screen name="index" />}
-      {hasSession && <Stack.Screen name="home" />}
-    </Stack>
+    <ErrorBoundary>
+      <Stack screenOptions={{ headerShown: false }}>
+        {!hasSession && <Stack.Screen name="index" />}
+        {hasSession && <Stack.Screen name="home" />}
+      </Stack>
+    </ErrorBoundary>
   );
 }
