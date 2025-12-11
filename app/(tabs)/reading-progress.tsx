@@ -184,7 +184,6 @@ async function fetchReadingProgress() {
 
     setLoading(false);
   } catch (error) {
-    logger.error("Error:", error);
     setLoading(false);
   }
 }

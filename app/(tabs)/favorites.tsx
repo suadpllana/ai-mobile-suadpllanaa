@@ -4,18 +4,19 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import BookCard from "../../components/BookCard";
 import BookModal from "../../components/BookModal";
 import { supabase } from "../../supabase";
+import { logger } from "../../utils/logger";
 type Favorite = {
   id: string;
   book_id: string;
@@ -44,7 +45,6 @@ export default function FavoritesScreen() {
 useFocusEffect(
     useCallback(() => {
       if (userId) {
-        logger.debug("Favorites tab focused → refetching...");
         fetchFavorites();
       }
     }, [userId])
@@ -88,7 +88,6 @@ useFocusEffect(
         setUserId(session.user.id);
       }
     } catch (error) {
-      logger.error("Error checking session:", error);
     }
   };
 
@@ -156,7 +155,6 @@ useFocusEffect(
       setFavorites(enriched.map(item => ({ ...item })));
       setRefreshKey(k => k + 1); 
     } catch (error) {
-      logger.error("Error fetching favorites:", error);
       Toast.show({ type: "error", text1: "Failed to load favorites" });
     } finally {
       setLoading(false);

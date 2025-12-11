@@ -97,7 +97,6 @@ export default function ProfileScreen() {
         const { data: { user: u }, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
         setUser(u || null);
-        logger.debug('User metadata:', u?.user_metadata);
 
         if (u) {
           setEmail(u.email || '');
