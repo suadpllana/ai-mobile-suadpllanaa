@@ -387,7 +387,7 @@ export default function AuthorsScreen() {
                   onPress={() => fetchBooks(item.name)}
                   activeOpacity={0.8}
                 >
-                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                  <Image source={{ uri: avatarUri }} style={[styles.avatarImage, { backgroundColor: cardBg }]} />
                   <View style={{ flex: 1 }}>
                     <ThemedText type="defaultSemiBold" style={styles.authorName}>{item.name}</ThemedText>
                     <ThemedText style={{ fontSize: 12, color: mutedText }}>{item.genre}</ThemedText>
@@ -458,7 +458,7 @@ export default function AuthorsScreen() {
                 const thumb = vol.imageLinks?.thumbnail || `https://ui-avatars.com/api/?name=${encodeURIComponent((vol.authors && vol.authors[0]) || selectedAuthor || 'Author')}&background=cccccc&color=333&size=128`;
                 return (
                   <View style={[styles.bookCard, { backgroundColor: cardBg }]}> 
-                    <Image source={{ uri: thumb }} style={styles.bookImage} />
+                    <Image source={{ uri: thumb }} style={[styles.bookImage, { backgroundColor: cardBg }]} />
                     <View style={styles.bookContent}>
                       <ThemedText style={styles.bookTitle}>{vol.title || 'Untitled'}</ThemedText>
                       <ThemedText style={[styles.bookAuthor, { color: mutedText }]}>{(vol.authors && vol.authors.join(', ')) || selectedAuthor}</ThemedText>
@@ -488,12 +488,12 @@ const styles = StyleSheet.create({
   column: { justifyContent: 'space-between', marginBottom: 12 },
   authorCard: { flex: 1, margin: 6, padding: 14, borderRadius: 12, flexDirection: 'row', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
   avatar: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  avatarImage: { width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: '#e5e7eb' },
+  avatarImage: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
   avatarText: { color: '#fff', fontWeight: '700' },
   authorName: { flex: 1, fontSize: 16 },
   backText: { marginBottom: 12, fontSize: 16 },
   bookCard: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 14, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
-  bookImage: { width: 64, height: 96, borderRadius: 8, marginRight: 12, backgroundColor: '#f3f4f6' },
+  bookImage: { width: 64, height: 96, borderRadius: 8, marginRight: 12 },
   bookContent: { flex: 1 },
   bookTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
   bookAuthor: { fontSize: 14, marginBottom: 6 },

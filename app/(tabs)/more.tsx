@@ -61,11 +61,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
+    flex: 1,
     padding: 0,
-    width: 390,
-    height: 669,
     backgroundColor: 'rgba(0, 0, 0, 0.83)',
-
     paddingVertical: 24,
     paddingHorizontal: 8,
     shadowColor: '#000',
@@ -76,10 +74,10 @@ const styles = StyleSheet.create({
   },
   screen: {
     flex: 1,
-    width: 390,
     backgroundColor: 'transparent',
   },
   scrollContent: {
+    flexGrow: 1,
     paddingBottom: 24,
   },
   menuItem: {
