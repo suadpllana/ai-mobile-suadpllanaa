@@ -18,7 +18,7 @@ import { ThemedText } from "../themed-text";
 
 export function ReadingGoals({
   onPagesUpdated,
-}: { onPagesUpdated?: () => void }) {
+}: { onPagesUpdated?: (newPages?: number, newStreak?: number) => void }) {
   const [goals, setGoals] = useState<{
     dailyPages: number;
     completedToday: number;
@@ -329,7 +329,8 @@ export function ReadingGoals({
       setPagesModal(false);
       setPagesInput("");
       Alert.alert("Success!", `${pages} pages logged`);
-      onPagesUpdated?.();
+      // Pass the new values to parent for immediate UI update
+      onPagesUpdated?.(pages, newStreak);
     } catch (err: any) {
       logger.error("savePagesReadToday error:", err);
       Alert.alert("Error", err.message ?? "Failed to save");
