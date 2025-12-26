@@ -8,17 +8,19 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
+  Vibration,
   View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../supabase';
-import { analytics } from '../utils/analytics';
-import { getBookCardLabel, getImageAccessibilityProps, getTouchableAccessibilityProps } from '../utils/accessibility';
-import { optimizeBookCoverUrl } from '../utils/imageCache';
 import type { Book } from '../types/common';
+import { getBookCardLabel, getTouchableAccessibilityProps } from '../utils/accessibility';
+import { analytics } from '../utils/analytics';
+import { optimizeBookCoverUrl } from '../utils/imageCache';
 
 type Props = {
   book: Book | any;
@@ -207,6 +209,24 @@ function BookCardComponent({
 }
   };
 
+  const shareBook = async () => {
+    try {
+      Vibration.vibrate(50);
+      const title = book?.title || 'Check out this book!';
+      const author = book?.author ? `by ${book.author}` : '';
+      const year = book?.publishedDate || book?.published_date || book?.year || '';
+      const yearText = year ? ` (${String(year).slice(0, 4)})` : '';
+      
+      await Share.share({
+        message: `📚 ${title} ${author}${yearText}\n\nShared via MyBooks App`,
+        title: title,
+      });
+      analytics.trackUserAction('share_book', 'book_card', { book_id: book?.id });
+    } catch (error) {
+      // User cancelled share
+    }
+  };
+
   const getStatusColor = (status?: string) => {
     switch (status?.toLowerCase()) {
       case 'want to read': return '#8b5cf6';
@@ -274,6 +294,15 @@ function BookCardComponent({
               )}
             </TouchableOpacity>
 
+            <TouchableOpacity 
+              style={styles.shareButton} 
+              onPress={shareBook} 
+              activeOpacity={0.8}
+              {...getTouchableAccessibilityProps('Share book', 'Double tap to share this book')}
+            >
+              <Ionicons name="share-outline" size={18} color="#fff" />
+            </TouchableOpacity>
+
             <Image
               source={imgUri ? { uri: imgUri } : bundledPlaceholder}
               placeholder={blurhash}
@@ -296,6 +325,33 @@ function BookCardComponent({
             <Text style={styles.author} numberOfLines={1}>
               {typeof book.author === 'string' && book.author.trim() ? book.author : 'Unknown Author'}
             </Text>
+
+            <View style={styles.bookMetaRow}>
+              {(book.publishedDate || book.published_date || book.year) && (
+                <View style={styles.metaTag}>
+                  <Ionicons name="calendar-outline" size={11} color="#a78bfa" />
+                  <Text style={styles.metaTagText}>
+                    {String(book.publishedDate || book.published_date || book.year).slice(0, 4)}
+                  </Text>
+                </View>
+              )}
+              {(book.pageCount || book.page_count || book.pages) && (
+                <View style={styles.metaTag}>
+                  <Ionicons name="document-text-outline" size={11} color="#a78bfa" />
+                  <Text style={styles.metaTagText}>
+                    {book.pageCount || book.page_count || book.pages} pages
+                  </Text>
+                </View>
+              )}
+              {book.language && (
+                <View style={styles.metaTag}>
+                  <Ionicons name="globe-outline" size={11} color="#a78bfa" />
+                  <Text style={styles.metaTagText}>
+                    {book.language.toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </View>
 
             <View style={styles.metaRow}>
               <Text style={styles.category} numberOfLines={1}>
@@ -397,6 +453,37 @@ const styles = StyleSheet.create({
     zIndex: 10,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
+  },
+  shareButton: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 6,
+    borderRadius: 20,
+    zIndex: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  bookMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 2,
+  },
+  metaTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  metaTagText: {
+    fontSize: 10,
+    color: '#c4b5fd',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
